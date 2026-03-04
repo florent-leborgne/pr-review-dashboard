@@ -1078,7 +1078,7 @@ async function fetchPRs() {
       return {
         ...pr,
         myState,
-        latestReview,
+        latestReview: latestDecisive,
         isDirectRequest,
         isTeamRequest: matchedTeams.length > 0,
         matchedTeams,
