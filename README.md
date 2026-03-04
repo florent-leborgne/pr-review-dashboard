@@ -8,9 +8,14 @@ GitHub's built-in search can tell you which PRs you're "involved" in, but can't 
 
 - **Cross-repo**: Automatically finds PRs across all repositories where you or your teams are requested as reviewers
 - **Team-aware**: Auto-detects your GitHub team memberships and tracks team-based review requests
-- **Filters by review state**: Pending (not reviewed yet), Commented, Changes Requested
-- **Filters by reviewer**: Click any team/user badge to filter PRs for that specific reviewer
+- **Filters by review state**: Pending review, Commented, Changes requested
+- **Filters by reviewer**: Click any team/user badge in the header to filter PRs for that specific reviewer
+- **Blocking indicator**: Shows whether a PR is "Waiting on you only" vs "You + N others pending" so you can prioritize
+- **Other reviewers' status**: See who else has approved, commented, requested changes, or is still pending
+- **Draft toggle**: Show or hide draft PRs with a single click
 - **Groups by repository**: See at a glance which repos need your attention
+- **Light & dark theme**: Light theme by default, with a toggle to switch to dark mode (persisted)
+- **Accessible label colors**: Label colors are automatically adjusted for contrast based on the active theme
 - **Auto-refreshes** every 5 minutes (configurable)
 - **Zero dependencies**: Single HTML file, no build step, no server
 
@@ -59,10 +64,16 @@ The dashboard runs three types of GitHub search queries in parallel using the Gi
 3. `team-review-requested:ORG/TEAM` — one query per team you belong to
 
 Results are merged, deduplicated, and filtered to exclude:
-- PRs you've already **approved**
+- PRs you've already **approved** (comment-only reviews don't override a previous approval)
+- PRs from **archived repositories**
 - Your own PRs
 
-Each PR shows which team or direct request triggered it, your current review status, and standard metadata (author, labels, timestamps).
+Each PR shows:
+- Which team or direct request triggered it
+- Your current review status (pending review, commented, changes requested)
+- Whether the PR is blocked on you specifically or also waiting on others
+- Other reviewers' status (approved, commented, changes requested, pending)
+- GitHub labels (with contrast-adjusted colors), draft status, author, and timestamps
 
 ## Privacy
 
