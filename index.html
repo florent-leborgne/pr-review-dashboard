@@ -1022,8 +1022,13 @@ async function fetchPRs() {
 
     allPRs = Array.from(seen.values()).map(pr => {
       const myReviews = (pr.reviews?.nodes || []).filter(r => r.author?.login === username);
-      const latestReview = myReviews.length > 0 ? myReviews[myReviews.length - 1] : null;
-      const myState = latestReview ? latestReview.state : 'NONE';
+      // Find the latest decisive review (APPROVED or CHANGES_REQUESTED).
+      // COMMENTED reviews don't change your review stance — leaving a comment
+      // after approving doesn't revoke the approval.
+      const latestDecisive = [...myReviews].reverse().find(r =>
+        r.state === 'APPROVED' || r.state === 'CHANGES_REQUESTED'
+      );
+      const myState = latestDecisive ? latestDecisive.state : (myReviews.length > 0 ? 'COMMENTED' : 'NONE');
 
       const isDirectRequest = (pr.reviewRequests?.nodes || []).some(rr =>
         rr.requestedReviewer?.login === username
