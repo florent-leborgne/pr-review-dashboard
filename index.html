@@ -1083,18 +1083,7 @@ async function fetchPRs() {
       };
     }).filter(pr => pr.myState !== 'APPROVED' && pr.author?.login !== username && !pr.repository?.isArchived);
 
-    allPRs.sort((a, b) => {
-      // Direct requests first, then team requests, then already-reviewed
-      const priorityA = a.isDirectRequest ? 0 : a.isTeamRequest ? 1 : 2;
-      const priorityB = b.isDirectRequest ? 0 : b.isTeamRequest ? 1 : 2;
-      if (priorityA !== priorityB) return priorityA - priorityB;
-
-      const order = { NONE: 0, CHANGES_REQUESTED: 1, COMMENTED: 2, DISMISSED: 3 };
-      const diff = (order[a.myState] ?? 9) - (order[b.myState] ?? 9);
-      if (diff !== 0) return diff;
-
-      return new Date(b.updatedAt) - new Date(a.updatedAt);
-    });
+    allPRs.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
 
     updateCounts();
     renderPRs();
