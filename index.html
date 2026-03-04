@@ -1211,7 +1211,7 @@ function renderPRCard(pr) {
     return `<span class="pr-reviewer ${cls}"><span class="rv-icon">${icon}</span> ${escapeHtml(r.login)}</span>`;
   }).join('');
 
-  const pendingOthers = (pr.otherReviewers || []).filter(r => r.state === 'PENDING').length;
+  const pendingOthers = (pr.otherReviewers || []).filter(r => r.state !== 'APPROVED').length;
   const iAmPending = pr.myState === 'NONE' || pr.myState === 'COMMENTED';
   const youLabel = pr.isDirectRequest ? 'you' : pr.isTeamRequest ? 'your team' : 'you';
   const YouLabel = pr.isDirectRequest ? 'You' : pr.isTeamRequest ? 'Your team' : 'You';
