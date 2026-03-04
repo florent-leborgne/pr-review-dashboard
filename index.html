@@ -1213,11 +1213,13 @@ function renderPRCard(pr) {
 
   const pendingOthers = (pr.otherReviewers || []).filter(r => r.state === 'PENDING').length;
   const iAmPending = pr.myState === 'NONE' || pr.myState === 'COMMENTED';
+  const youLabel = pr.isDirectRequest ? 'you' : pr.isTeamRequest ? 'your team' : 'you';
+  const YouLabel = pr.isDirectRequest ? 'You' : pr.isTeamRequest ? 'Your team' : 'You';
   let blockingHtml = '';
   if (iAmPending && pendingOthers === 0) {
-    blockingHtml = '<div class="pr-blocking sole-blocker">Waiting on you only</div>';
+    blockingHtml = `<div class="pr-blocking sole-blocker">Waiting on ${youLabel} only</div>`;
   } else if (iAmPending && pendingOthers > 0) {
-    blockingHtml = `<div class="pr-blocking shared">You + ${pendingOthers} other${pendingOthers > 1 ? 's' : ''} pending</div>`;
+    blockingHtml = `<div class="pr-blocking shared">${YouLabel} + ${pendingOthers} other${pendingOthers > 1 ? 's' : ''} pending</div>`;
   } else if (!iAmPending && pendingOthers > 0) {
     blockingHtml = `<div class="pr-blocking shared">${pendingOthers} other${pendingOthers > 1 ? 's' : ''} pending</div>`;
   }
