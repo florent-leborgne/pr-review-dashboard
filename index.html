@@ -611,6 +611,10 @@
       </div>
       <div style="display:flex; align-items:center; gap:12px;">
         <label class="auto-refresh-toggle">
+          <input type="checkbox" id="show-drafts" checked>
+          Show drafts
+        </label>
+        <label class="auto-refresh-toggle">
           <input type="checkbox" id="auto-refresh" checked>
           Auto-refresh (5 min)
         </label>
@@ -669,6 +673,7 @@ function showDashboard() {
   document.getElementById('dashboard-screen').style.display = '';
 
   setupFilterTabs();
+  setupDraftToggle();
   fetchTeamsThenPRs();
   setupAutoRefresh();
 }
@@ -686,6 +691,13 @@ function setupFilterTabs() {
     document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
     tab.classList.add('active');
     currentFilter = tab.dataset.filter;
+    renderPRs();
+  });
+}
+
+function setupDraftToggle() {
+  document.getElementById('show-drafts').addEventListener('change', () => {
+    updateCounts();
     renderPRs();
   });
 }
@@ -1024,8 +1036,11 @@ async function fetchPRs() {
 }
 
 function getViaFilteredPRs() {
-  if (!currentRequestedViaFilter) return allPRs;
-  return allPRs.filter(pr => pr.requestedVia.includes(currentRequestedViaFilter));
+  const showDrafts = document.getElementById('show-drafts')?.checked ?? true;
+  let prs = allPRs;
+  if (!showDrafts) prs = prs.filter(pr => !pr.isDraft);
+  if (currentRequestedViaFilter) prs = prs.filter(pr => pr.requestedVia.includes(currentRequestedViaFilter));
+  return prs;
 }
 
 function updateCounts() {
