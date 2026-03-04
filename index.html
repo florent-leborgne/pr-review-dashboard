@@ -783,6 +783,7 @@ async function searchPRs(searchQuery) {
               author { login avatarUrl }
               repository {
                 nameWithOwner
+                isArchived
               }
               labels(first: 10) {
                 nodes { name color }
@@ -921,7 +922,7 @@ async function fetchPRs() {
         requestedVia,
         repo: pr.repository?.nameWithOwner || 'unknown'
       };
-    }).filter(pr => pr.myState !== 'APPROVED' && pr.author?.login !== username);
+    }).filter(pr => pr.myState !== 'APPROVED' && pr.author?.login !== username && !pr.repository?.isArchived);
 
     allPRs.sort((a, b) => {
       // Direct requests first, then team requests, then already-reviewed
