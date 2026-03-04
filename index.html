@@ -266,29 +266,18 @@
     margin-bottom: 8px;
     transition: border-color 0.15s;
     display: grid;
-    grid-template-columns: auto 1fr auto;
+    grid-template-columns: 1fr auto;
     gap: 12px;
     align-items: start;
+    border-left: 3px solid var(--border);
   }
 
   .pr-card:hover { border-color: var(--text-dim); }
 
-  .pr-status-icon {
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 14px;
-    flex-shrink: 0;
-    margin-top: 2px;
-  }
-
-  .pr-status-icon.pending { background: var(--badge-yellow-bg); color: var(--yellow); }
-  .pr-status-icon.commented { background: var(--badge-accent-bg); color: var(--accent); }
-  .pr-status-icon.changes { background: var(--badge-red-bg); color: var(--red); }
-  .pr-status-icon.dismissed { background: var(--badge-muted-bg); color: var(--text-muted); }
+  .pr-card.pending { border-left-color: var(--yellow); }
+  .pr-card.commented { border-left-color: var(--accent); }
+  .pr-card.changes { border-left-color: var(--red); }
+  .pr-card.dismissed { border-left-color: var(--text-muted); }
 
   .pr-body { min-width: 0; }
 
@@ -601,7 +590,6 @@
 
   @media (max-width: 640px) {
     .pr-card { grid-template-columns: 1fr; gap: 8px; }
-    .pr-status-icon { display: none; }
     .pr-right { text-align: left; display: flex; gap: 8px; align-items: center; }
   }
 </style>
@@ -663,9 +651,9 @@
     <div class="toolbar">
       <div class="filter-tabs" id="filter-tabs">
         <button class="filter-tab active" data-filter="all">All <span class="count" id="count-all">0</span></button>
-        <button class="filter-tab" data-filter="NONE">Pending <span class="count" id="count-pending">0</span></button>
+        <button class="filter-tab" data-filter="NONE">Pending review <span class="count" id="count-pending">0</span></button>
         <button class="filter-tab" data-filter="COMMENTED">Commented <span class="count" id="count-commented">0</span></button>
-        <button class="filter-tab" data-filter="CHANGES_REQUESTED">Changes <span class="count" id="count-changes">0</span></button>
+        <button class="filter-tab" data-filter="CHANGES_REQUESTED">Changes requested <span class="count" id="count-changes">0</span></button>
       </div>
       <div style="display:flex; align-items:center; gap:12px;">
         <label class="auto-refresh-toggle">
@@ -1167,17 +1155,10 @@ function renderPRCard(pr) {
     DISMISSED: 'dismissed'
   }[pr.myState] || 'pending';
 
-  const stateIcon = {
-    NONE: '&#x25CB;',
-    COMMENTED: '&#x1F4AC;',
-    CHANGES_REQUESTED: '&#x21BB;',
-    DISMISSED: '&#x2014;'
-  }[pr.myState] || '?';
-
   const stateLabel = {
-    NONE: 'Pending',
+    NONE: 'Pending review',
     COMMENTED: 'Commented',
-    CHANGES_REQUESTED: 'Changes',
+    CHANGES_REQUESTED: 'Changes requested',
     DISMISSED: 'Dismissed'
   }[pr.myState] || pr.myState;
 
@@ -1216,8 +1197,7 @@ function renderPRCard(pr) {
   }).join('');
 
   return `
-    <li class="pr-card">
-      <div class="pr-status-icon ${stateClass}">${stateIcon}</div>
+    <li class="pr-card ${stateClass}">
       <div class="pr-body">
         <div class="pr-title-row">
           <a class="pr-title" href="${pr.url}" target="_blank" rel="noopener">${draft}${escapeHtml(pr.title)}</a>
