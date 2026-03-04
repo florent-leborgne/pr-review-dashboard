@@ -477,6 +477,55 @@
     color: var(--purple);
   }
 
+  .pr-reviewers {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin-top: 6px;
+    align-items: center;
+  }
+
+  .pr-reviewers-label {
+    font-size: 11px;
+    color: var(--text-dim);
+    margin-right: 2px;
+  }
+
+  .pr-reviewer {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    font-size: 11px;
+    padding: 1px 7px;
+    border-radius: 10px;
+    white-space: nowrap;
+  }
+
+  .pr-reviewer.rv-approved {
+    background: rgba(63, 185, 80, 0.12);
+    color: var(--green);
+  }
+
+  .pr-reviewer.rv-changes {
+    background: rgba(248, 81, 73, 0.12);
+    color: var(--red);
+  }
+
+  .pr-reviewer.rv-commented {
+    background: rgba(88, 166, 255, 0.08);
+    color: var(--text-muted);
+  }
+
+  .pr-reviewer.rv-pending {
+    background: rgba(139, 148, 158, 0.08);
+    color: var(--text-dim);
+  }
+
+  .rv-icon {
+    font-size: 10px;
+    line-height: 1;
+  }
+
   .progress-bar {
     width: 200px;
     height: 4px;
@@ -912,6 +961,29 @@ async function fetchPRs() {
       if (isDirectRequest) requestedVia.push('direct');
       requestedVia.push(...matchedTeams);
 
+      // Build a map of each reviewer's latest state (excluding the current user)
+      const reviewerStates = new Map();
+      for (const review of (pr.reviews?.nodes || [])) {
+        const login = review.author?.login;
+        if (!login || login === username) continue;
+        reviewerStates.set(login, review.state);
+      }
+
+      // Add pending reviewers (requested but no review submitted yet)
+      for (const rr of (pr.reviewRequests?.nodes || [])) {
+        const login = rr.requestedReviewer?.login;
+        if (login && login !== username && !reviewerStates.has(login)) {
+          reviewerStates.set(login, 'PENDING');
+        }
+      }
+
+      const otherReviewers = Array.from(reviewerStates.entries())
+        .map(([login, state]) => ({ login, state }))
+        .sort((a, b) => {
+          const order = { APPROVED: 0, CHANGES_REQUESTED: 1, COMMENTED: 2, PENDING: 3, DISMISSED: 4 };
+          return (order[a.state] ?? 9) - (order[b.state] ?? 9);
+        });
+
       return {
         ...pr,
         myState,
@@ -920,6 +992,7 @@ async function fetchPRs() {
         isTeamRequest: matchedTeams.length > 0,
         matchedTeams,
         requestedVia,
+        otherReviewers,
         repo: pr.repository?.nameWithOwner || 'unknown'
       };
     }).filter(pr => pr.myState !== 'APPROVED' && pr.author?.login !== username && !pr.repository?.isArchived);
@@ -1038,6 +1111,26 @@ function renderPRCard(pr) {
     return `<span class="pr-via-badge via-team">${escapeHtml(via)}</span>`;
   }).join('');
 
+  const reviewerBadges = (pr.otherReviewers || []).map(r => {
+    const cls = {
+      APPROVED: 'rv-approved',
+      CHANGES_REQUESTED: 'rv-changes',
+      COMMENTED: 'rv-commented',
+      PENDING: 'rv-pending',
+      DISMISSED: 'rv-pending'
+    }[r.state] || 'rv-pending';
+
+    const icon = {
+      APPROVED: '&#x2713;',
+      CHANGES_REQUESTED: '&#x21BB;',
+      COMMENTED: '&#x1F4AC;',
+      PENDING: '&#x25CB;',
+      DISMISSED: '&#x2014;'
+    }[r.state] || '&#x25CB;';
+
+    return `<span class="pr-reviewer ${cls}"><span class="rv-icon">${icon}</span> ${escapeHtml(r.login)}</span>`;
+  }).join('');
+
   return `
     <li class="pr-card">
       <div class="pr-status-icon ${stateClass}">${stateIcon}</div>
@@ -1051,6 +1144,7 @@ function renderPRCard(pr) {
           <span>opened ${timeAgo(pr.createdAt)}</span>
         </div>
         ${viaBadges ? `<div class="pr-requested-via">${viaBadges}</div>` : ''}
+        ${reviewerBadges ? `<div class="pr-reviewers"><span class="pr-reviewers-label">Reviews:</span>${reviewerBadges}</div>` : ''}
         ${labels ? `<div class="pr-labels">${labels}</div>` : ''}
       </div>
       <div class="pr-right">
