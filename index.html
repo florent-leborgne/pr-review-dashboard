@@ -1,0 +1,1084 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PR Review Dashboard</title>
+<style>
+  :root {
+    --bg: #0d1117;
+    --surface: #161b22;
+    --surface-hover: #1c2129;
+    --border: #30363d;
+    --text: #e6edf3;
+    --text-muted: #8b949e;
+    --text-dim: #6e7681;
+    --accent: #58a6ff;
+    --accent-hover: #79bbff;
+    --green: #3fb950;
+    --yellow: #d29922;
+    --red: #f85149;
+    --orange: #db6d28;
+    --purple: #bc8cff;
+    --radius: 8px;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.5;
+    min-height: 100vh;
+  }
+
+  .container {
+    max-width: 1020px;
+    margin: 0 auto;
+    padding: 24px 16px;
+  }
+
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  header h1 {
+    font-size: 20px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  header h1 svg { opacity: 0.7; }
+
+  .header-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  button, input, select {
+    font-family: inherit;
+    font-size: 14px;
+  }
+
+  input, select {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 6px 12px;
+    border-radius: 6px;
+    outline: none;
+  }
+
+  input:focus, select:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(88, 166, 255, 0.15);
+  }
+
+  .btn {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 6px 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: background 0.15s, border-color 0.15s;
+  }
+
+  .btn:hover { background: var(--surface-hover); border-color: var(--text-dim); }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  .btn-primary {
+    background: #238636;
+    border-color: rgba(240,246,252,0.1);
+  }
+
+  .btn-primary:hover { background: #2ea043; }
+  .btn-sm { padding: 4px 10px; font-size: 12px; }
+  .btn-danger { color: var(--red); }
+  .btn-danger:hover { border-color: var(--red); }
+
+  .setup-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 32px;
+    max-width: 520px;
+    margin: 60px auto;
+  }
+
+  .setup-card h2 { margin-bottom: 8px; font-size: 18px; }
+  .setup-card p { color: var(--text-muted); font-size: 14px; margin-bottom: 20px; }
+
+  .setup-card label {
+    display: block;
+    font-size: 13px;
+    font-weight: 500;
+    margin-bottom: 4px;
+    color: var(--text-muted);
+  }
+
+  .setup-card input {
+    width: 100%;
+    margin-bottom: 16px;
+  }
+
+  .setup-card .hint {
+    font-size: 12px;
+    color: var(--text-dim);
+    margin-top: -12px;
+    margin-bottom: 16px;
+  }
+
+  .toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .filter-tabs {
+    display: flex;
+    gap: 4px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 2px;
+  }
+
+  .filter-tab {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    padding: 5px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 500;
+    transition: all 0.15s;
+  }
+
+  .filter-tab:hover { color: var(--text); }
+  .filter-tab.active { background: var(--border); color: var(--text); }
+
+  .filter-tab .count {
+    background: var(--border);
+    padding: 0 6px;
+    border-radius: 10px;
+    margin-left: 4px;
+    font-size: 11px;
+  }
+
+  .filter-tab.active .count { background: var(--text-dim); }
+
+  .status-text {
+    font-size: 13px;
+    color: var(--text-dim);
+  }
+
+  .pr-list { list-style: none; }
+
+  .repo-group-header {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-muted);
+    padding: 16px 4px 6px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 8px;
+  }
+
+  .repo-group-header:first-child { padding-top: 0; }
+
+  .repo-group-header a {
+    color: var(--text-muted);
+    text-decoration: none;
+  }
+
+  .repo-group-header a:hover { color: var(--accent); }
+
+  .repo-group-header .repo-count {
+    background: var(--border);
+    padding: 0 6px;
+    border-radius: 10px;
+    font-size: 11px;
+    font-weight: 500;
+  }
+
+  .pr-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px 20px;
+    margin-bottom: 8px;
+    transition: border-color 0.15s;
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    gap: 12px;
+    align-items: start;
+  }
+
+  .pr-card:hover { border-color: var(--text-dim); }
+
+  .pr-status-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+
+  .pr-status-icon.pending { background: rgba(210, 153, 34, 0.15); color: var(--yellow); }
+  .pr-status-icon.commented { background: rgba(88, 166, 255, 0.15); color: var(--accent); }
+  .pr-status-icon.changes { background: rgba(248, 81, 73, 0.15); color: var(--red); }
+  .pr-status-icon.dismissed { background: rgba(139, 148, 158, 0.15); color: var(--text-muted); }
+
+  .pr-body { min-width: 0; }
+
+  .pr-title-row {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .pr-title {
+    font-weight: 600;
+    font-size: 15px;
+    color: var(--text);
+    text-decoration: none;
+    line-height: 1.4;
+  }
+
+  .pr-title:hover { color: var(--accent); }
+
+  .pr-number {
+    color: var(--text-dim);
+    font-size: 14px;
+    font-weight: 400;
+    white-space: nowrap;
+  }
+
+  .pr-meta {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-top: 4px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .pr-meta a {
+    color: var(--text-muted);
+    text-decoration: none;
+  }
+
+  .pr-meta a:hover { color: var(--accent); }
+
+  .pr-labels {
+    display: flex;
+    gap: 4px;
+    flex-wrap: wrap;
+    margin-top: 6px;
+  }
+
+  .pr-label {
+    font-size: 11px;
+    font-weight: 500;
+    padding: 1px 8px;
+    border-radius: 12px;
+    border: 1px solid transparent;
+    white-space: nowrap;
+  }
+
+  .pr-right {
+    text-align: right;
+    flex-shrink: 0;
+  }
+
+  .pr-review-status {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 2px 8px;
+    border-radius: 4px;
+    white-space: nowrap;
+  }
+
+  .pr-review-status.pending { background: rgba(210,153,34,0.15); color: var(--yellow); }
+  .pr-review-status.commented { background: rgba(88,166,255,0.15); color: var(--accent); }
+  .pr-review-status.changes { background: rgba(248,81,73,0.15); color: var(--red); }
+  .pr-review-status.dismissed { background: rgba(139,148,158,0.15); color: var(--text-muted); }
+
+  .pr-updated {
+    font-size: 11px;
+    color: var(--text-dim);
+    margin-top: 4px;
+    white-space: nowrap;
+  }
+
+  .loading {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--text-muted);
+  }
+
+  .loading-detail {
+    font-size: 12px;
+    color: var(--text-dim);
+    margin-top: 8px;
+  }
+
+  .spinner {
+    display: inline-block;
+    width: 24px;
+    height: 24px;
+    border: 3px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin-bottom: 12px;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--text-muted);
+  }
+
+  .empty-state .emoji { font-size: 32px; margin-bottom: 8px; }
+
+  .error-msg {
+    background: rgba(248,81,73,0.1);
+    border: 1px solid rgba(248,81,73,0.3);
+    color: var(--red);
+    padding: 12px 16px;
+    border-radius: var(--radius);
+    font-size: 14px;
+    margin-bottom: 16px;
+  }
+
+  .auto-refresh-toggle {
+    font-size: 12px;
+    color: var(--text-dim);
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .auto-refresh-toggle input[type="checkbox"] {
+    width: auto;
+    padding: 0;
+  }
+
+  .teams-info {
+    font-size: 12px;
+    color: var(--text-dim);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 8px 12px;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+
+  .teams-info .team-badge,
+  .teams-info .user-badge {
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 11px;
+    font-weight: 500;
+    cursor: pointer;
+    border: 1px solid transparent;
+    transition: all 0.15s;
+    user-select: none;
+  }
+
+  .teams-info .team-badge {
+    background: rgba(188, 140, 255, 0.12);
+    color: var(--purple);
+  }
+
+  .teams-info .team-badge:hover {
+    background: rgba(188, 140, 255, 0.25);
+    border-color: rgba(188, 140, 255, 0.4);
+  }
+
+  .teams-info .team-badge.active {
+    background: rgba(188, 140, 255, 0.3);
+    border-color: var(--purple);
+    box-shadow: 0 0 0 2px rgba(188, 140, 255, 0.15);
+  }
+
+  .teams-info .user-badge {
+    background: rgba(88, 166, 255, 0.12);
+    color: var(--accent);
+  }
+
+  .teams-info .user-badge:hover {
+    background: rgba(88, 166, 255, 0.25);
+    border-color: rgba(88, 166, 255, 0.4);
+  }
+
+  .teams-info .user-badge.active {
+    background: rgba(88, 166, 255, 0.3);
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px rgba(88, 166, 255, 0.15);
+  }
+
+  .pr-requested-via {
+    display: flex;
+    gap: 4px;
+    flex-wrap: wrap;
+    margin-top: 5px;
+  }
+
+  .pr-via-badge {
+    font-size: 10px;
+    font-weight: 500;
+    padding: 1px 7px;
+    border-radius: 10px;
+    white-space: nowrap;
+  }
+
+  .pr-via-badge.via-direct {
+    background: rgba(88, 166, 255, 0.12);
+    color: var(--accent);
+  }
+
+  .pr-via-badge.via-team {
+    background: rgba(188, 140, 255, 0.12);
+    color: var(--purple);
+  }
+
+  .progress-bar {
+    width: 200px;
+    height: 4px;
+    background: var(--border);
+    border-radius: 2px;
+    overflow: hidden;
+    margin: 12px auto;
+  }
+
+  .progress-bar-fill {
+    height: 100%;
+    background: var(--accent);
+    border-radius: 2px;
+    transition: width 0.3s;
+  }
+
+  @media (max-width: 640px) {
+    .pr-card { grid-template-columns: 1fr; gap: 8px; }
+    .pr-status-icon { display: none; }
+    .pr-right { text-align: left; display: flex; gap: 8px; align-items: center; }
+  }
+</style>
+</head>
+<body>
+
+<div class="container" id="app">
+  <!-- Setup screen -->
+  <div class="setup-card" id="setup-screen">
+    <h2>PR Review Dashboard</h2>
+    <p>Track pull requests you need to review across all repositories, including team-based review requests.</p>
+
+    <label for="token-input">GitHub Personal Access Token</label>
+    <input type="password" id="token-input" placeholder="ghp_... or github_pat_...">
+    <p class="hint">
+      Your token is stored <strong>only</strong> in your browser's <code>localStorage</code> and is never sent anywhere except directly to the GitHub API.
+    </p>
+
+    <details style="margin-bottom:16px; font-size:12px; color:var(--text-muted);">
+      <summary style="cursor:pointer; color:var(--accent); font-weight:500;">Which token type should I use?</summary>
+      <div style="margin-top:8px; line-height:1.6;">
+        <strong style="color:var(--text);">Fine-grained PAT (recommended)</strong><br>
+        More secure: scoped to specific repos/orgs, with an expiration date.<br>
+        Go to <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" style="color:var(--accent);">Settings &rarr; Fine-grained tokens</a> and grant:<br>
+        &bull; <strong>Repository access</strong>: All repositories (or select the repos you review)<br>
+        &bull; <strong>Organization permissions</strong>: Members &rarr; <code>read</code> (to detect your teams)<br>
+        &bull; <strong>Repository permissions</strong>: Pull requests &rarr; <code>read</code>, Metadata &rarr; <code>read</code><br>
+        &bull; Set an expiration (e.g. 90 days)<br><br>
+        <strong style="color:var(--text);">Classic PAT</strong><br>
+        Simpler to set up, broader access.<br>
+        <a href="https://github.com/settings/tokens/new?scopes=repo,read:org&description=PR+Review+Dashboard" target="_blank" style="color:var(--accent);">Create one</a> with <code>repo</code> and <code>read:org</code> scopes.
+      </div>
+    </details>
+
+    <label for="user-input-setup">GitHub username (optional, auto-detected)</label>
+    <input type="text" id="user-input-setup" placeholder="auto-detect">
+
+    <br><br>
+    <button class="btn btn-primary" onclick="saveSetup()">Get started</button>
+  </div>
+
+  <!-- Dashboard -->
+  <div id="dashboard-screen" style="display:none;">
+    <header>
+      <h1>
+        <svg width="20" height="20" viewBox="0 0 16 16" fill="currentColor"><path d="M7.177 3.073L9.573.677A.25.25 0 0110 .854v4.792a.25.25 0 01-.427.177L7.177 3.427a.25.25 0 010-.354zM3.75 2.5a.75.75 0 100 1.5.75.75 0 000-1.5zm-2.25.75a2.25 2.25 0 113 2.122v5.256a2.251 2.251 0 11-1.5 0V5.372A2.25 2.25 0 011.5 3.25zM11 2.5h-1V4h1a1 1 0 011 1v5.628a2.251 2.251 0 101.5 0V5A2.5 2.5 0 0011 2.5zm1 10.25a.75.75 0 111.5 0 .75.75 0 01-1.5 0zM3.75 12a.75.75 0 100 1.5.75.75 0 000-1.5z"/></svg>
+        PR Review Dashboard
+      </h1>
+      <div class="header-actions">
+        <button class="btn btn-sm" id="refresh-btn" onclick="fetchPRs()">Refresh</button>
+        <button class="btn btn-sm btn-danger" onclick="logout()" title="Reset token & sign out">Sign out</button>
+      </div>
+    </header>
+
+    <div id="teams-container"></div>
+    <div id="error-container"></div>
+
+    <div class="toolbar">
+      <div class="filter-tabs" id="filter-tabs">
+        <button class="filter-tab active" data-filter="all">All <span class="count" id="count-all">0</span></button>
+        <button class="filter-tab" data-filter="NONE">Pending <span class="count" id="count-pending">0</span></button>
+        <button class="filter-tab" data-filter="COMMENTED">Commented <span class="count" id="count-commented">0</span></button>
+        <button class="filter-tab" data-filter="CHANGES_REQUESTED">Changes <span class="count" id="count-changes">0</span></button>
+      </div>
+      <div style="display:flex; align-items:center; gap:12px;">
+        <label class="auto-refresh-toggle">
+          <input type="checkbox" id="auto-refresh" checked>
+          Auto-refresh (5 min)
+        </label>
+        <span class="status-text" id="status-text"></span>
+      </div>
+    </div>
+
+    <div id="pr-container">
+      <div class="loading"><div class="spinner"></div><br>Loading pull requests...</div>
+    </div>
+  </div>
+</div>
+
+<script>
+const STORAGE_KEYS = { token: 'prd_token', user: 'prd_user', teams: 'prd_teams' };
+let allPRs = [];
+let currentFilter = 'all';
+let currentRequestedViaFilter = null; // null = all, 'direct' = only direct, 'org/team-slug' = specific team
+let refreshTimer = null;
+let userTeams = [];
+
+function init() {
+  const token = localStorage.getItem(STORAGE_KEYS.token);
+  if (token) {
+    showDashboard();
+  } else {
+    document.getElementById('setup-screen').style.display = '';
+  }
+}
+
+async function saveSetup() {
+  const token = document.getElementById('token-input').value.trim();
+  const userOverride = document.getElementById('user-input-setup').value.trim();
+
+  if (!token) { alert('Token is required'); return; }
+
+  localStorage.setItem(STORAGE_KEYS.token, token);
+
+  if (userOverride) {
+    localStorage.setItem(STORAGE_KEYS.user, userOverride);
+  } else {
+    try {
+      const user = await apiGet('/user');
+      localStorage.setItem(STORAGE_KEYS.user, user.login);
+    } catch (e) {
+      alert('Failed to verify token: ' + e.message);
+      return;
+    }
+  }
+
+  showDashboard();
+}
+
+function showDashboard() {
+  document.getElementById('setup-screen').style.display = 'none';
+  document.getElementById('dashboard-screen').style.display = '';
+
+  setupFilterTabs();
+  fetchTeamsThenPRs();
+  setupAutoRefresh();
+}
+
+function logout() {
+  Object.values(STORAGE_KEYS).forEach(k => localStorage.removeItem(k));
+  clearInterval(refreshTimer);
+  location.reload();
+}
+
+function setupFilterTabs() {
+  document.getElementById('filter-tabs').addEventListener('click', (e) => {
+    const tab = e.target.closest('.filter-tab');
+    if (!tab) return;
+    document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    currentFilter = tab.dataset.filter;
+    renderPRs();
+  });
+}
+
+function setupAutoRefresh() {
+  const checkbox = document.getElementById('auto-refresh');
+  const startTimer = () => {
+    clearInterval(refreshTimer);
+    if (checkbox.checked) {
+      refreshTimer = setInterval(fetchPRs, 5 * 60 * 1000);
+    }
+  };
+  checkbox.addEventListener('change', startTimer);
+  startTimer();
+}
+
+async function apiGet(path) {
+  const token = localStorage.getItem(STORAGE_KEYS.token);
+  const res = await fetch(`https://api.github.com${path}`, {
+    headers: { Authorization: `Bearer ${token}`, Accept: 'application/vnd.github+json' }
+  });
+  if (!res.ok) throw new Error(`GitHub API error: ${res.status} ${res.statusText}`);
+  return res.json();
+}
+
+async function apiGetAllPages(path) {
+  const token = localStorage.getItem(STORAGE_KEYS.token);
+  let results = [];
+  let url = `https://api.github.com${path}${path.includes('?') ? '&' : '?'}per_page=100`;
+
+  while (url) {
+    const res = await fetch(url, {
+      headers: { Authorization: `Bearer ${token}`, Accept: 'application/vnd.github+json' }
+    });
+    if (!res.ok) throw new Error(`GitHub API error: ${res.status} ${res.statusText}`);
+    const data = await res.json();
+    results = results.concat(data);
+
+    const link = res.headers.get('Link');
+    const next = link?.match(/<([^>]+)>;\s*rel="next"/);
+    url = next ? next[1] : null;
+  }
+  return results;
+}
+
+async function graphql(query, variables = {}) {
+  const token = localStorage.getItem(STORAGE_KEYS.token);
+  const res = await fetch('https://api.github.com/graphql', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ query, variables })
+  });
+  if (!res.ok) throw new Error(`GitHub API error: ${res.status} ${res.statusText}`);
+  const json = await res.json();
+  if (json.errors) throw new Error(json.errors.map(e => e.message).join(', '));
+  return json.data;
+}
+
+async function fetchTeams() {
+  try {
+    const teams = await apiGetAllPages('/user/teams');
+    userTeams = teams.map(t => ({
+      org: t.organization.login,
+      slug: t.slug,
+      name: t.name,
+      qualified: `${t.organization.login}/${t.slug}`
+    }));
+    localStorage.setItem(STORAGE_KEYS.teams, JSON.stringify(userTeams));
+  } catch (e) {
+    const cached = localStorage.getItem(STORAGE_KEYS.teams);
+    if (cached) {
+      userTeams = JSON.parse(cached);
+    } else {
+      console.warn('Could not fetch teams:', e.message);
+      userTeams = [];
+    }
+  }
+
+  renderTeamsInfo();
+}
+
+function renderTeamsInfo() {
+  const container = document.getElementById('teams-container');
+  const username = localStorage.getItem(STORAGE_KEYS.user);
+
+  const directActive = currentRequestedViaFilter === 'direct' ? ' active' : '';
+  const userBadge = `<span class="user-badge${directActive}" data-via-filter="direct">@${escapeHtml(username)}</span>`;
+
+  if (userTeams.length === 0) {
+    container.innerHTML = `<div class="teams-info">
+      Tracking reviews for ${userBadge}
+      <span style="color:var(--text-dim);">No teams detected (add <code>read:org</code> scope to see team reviews)</span>
+    </div>`;
+  } else {
+    const teamBadges = userTeams.map(t => {
+      const isActive = currentRequestedViaFilter === t.qualified ? ' active' : '';
+      return `<span class="team-badge${isActive}" data-via-filter="${escapeHtml(t.qualified)}">${escapeHtml(t.qualified)}</span>`;
+    }).join('');
+
+    container.innerHTML = `<div class="teams-info">
+      Tracking reviews for ${userBadge} ${teamBadges}
+    </div>`;
+  }
+
+  container.querySelector('.teams-info').addEventListener('click', (e) => {
+    const badge = e.target.closest('[data-via-filter]');
+    if (!badge) return;
+    const filterValue = badge.dataset.viaFilter;
+    currentRequestedViaFilter = currentRequestedViaFilter === filterValue ? null : filterValue;
+    renderTeamsInfo();
+    updateCounts();
+    renderPRs();
+  });
+}
+
+async function fetchTeamsThenPRs() {
+  await fetchTeams();
+  await fetchPRs();
+}
+
+async function searchPRs(searchQuery) {
+  const prs = [];
+  let hasNext = true;
+  let cursor = null;
+
+  while (hasNext) {
+    const data = await graphql(`
+      query($cursor: String) {
+        search(
+          query: "${searchQuery}"
+          type: ISSUE
+          first: 50
+          after: $cursor
+        ) {
+          pageInfo { hasNextPage endCursor }
+          nodes {
+            ... on PullRequest {
+              number
+              title
+              url
+              createdAt
+              updatedAt
+              isDraft
+              author { login avatarUrl }
+              repository {
+                nameWithOwner
+              }
+              labels(first: 10) {
+                nodes { name color }
+              }
+              reviewRequests(first: 20) {
+                nodes {
+                  requestedReviewer {
+                    ... on User { login }
+                    ... on Team { name slug organization { login } }
+                  }
+                }
+              }
+              reviews(last: 100) {
+                nodes {
+                  author { login }
+                  state
+                  createdAt
+                }
+              }
+            }
+          }
+        }
+      }
+    `, { cursor });
+
+    const search = data.search;
+    prs.push(...search.nodes.filter(Boolean));
+    hasNext = search.pageInfo.hasNextPage;
+    cursor = search.pageInfo.endCursor;
+  }
+
+  return prs;
+}
+
+function setLoadingState(message, detail) {
+  const container = document.getElementById('pr-container');
+  container.innerHTML = `<div class="loading">
+    <div class="spinner"></div><br>${escapeHtml(message)}
+    ${detail ? `<div class="loading-detail">${escapeHtml(detail)}</div>` : ''}
+  </div>`;
+}
+
+async function fetchPRs() {
+  const username = localStorage.getItem(STORAGE_KEYS.user);
+  const btn = document.getElementById('refresh-btn');
+  const errContainer = document.getElementById('error-container');
+
+  btn.disabled = true;
+  btn.textContent = 'Loading...';
+  errContainer.innerHTML = '';
+
+  try {
+    const queries = [];
+
+    // 1. PRs where review is directly requested from me
+    queries.push({
+      label: 'direct review requests',
+      query: `is:pr is:open review-requested:${username}`
+    });
+
+    // 2. PRs I already reviewed (but might not have approved)
+    queries.push({
+      label: 'reviewed by me',
+      query: `is:pr is:open reviewed-by:${username}`
+    });
+
+    // 3. PRs where review is requested from one of my teams
+    for (const team of userTeams) {
+      queries.push({
+        label: `team: ${team.qualified}`,
+        query: `is:pr is:open team-review-requested:${team.qualified}`
+      });
+    }
+
+    setLoadingState('Loading pull requests...', `Running ${queries.length} search${queries.length > 1 ? 'es' : ''}...`);
+
+    // Run all searches in parallel
+    const results = await Promise.all(
+      queries.map(q => searchPRs(q.query).catch(err => {
+        console.warn(`Search failed for "${q.label}":`, err);
+        return [];
+      }))
+    );
+
+    // Merge and deduplicate by unique PR key (repo + number)
+    const seen = new Map();
+    for (const batch of results) {
+      for (const pr of batch) {
+        const key = `${pr.repository?.nameWithOwner}#${pr.number}`;
+        if (!seen.has(key)) {
+          seen.set(key, pr);
+        }
+      }
+    }
+
+    const teamBySlug = new Map();
+    for (const t of userTeams) {
+      teamBySlug.set(t.slug, t.qualified);
+      teamBySlug.set(t.qualified, t.qualified);
+    }
+
+    allPRs = Array.from(seen.values()).map(pr => {
+      const myReviews = (pr.reviews?.nodes || []).filter(r => r.author?.login === username);
+      const latestReview = myReviews.length > 0 ? myReviews[myReviews.length - 1] : null;
+      const myState = latestReview ? latestReview.state : 'NONE';
+
+      const isDirectRequest = (pr.reviewRequests?.nodes || []).some(rr =>
+        rr.requestedReviewer?.login === username
+      );
+
+      // Collect all matching team names for this PR
+      const matchedTeams = [];
+      for (const rr of (pr.reviewRequests?.nodes || [])) {
+        const reviewer = rr.requestedReviewer;
+        if (!reviewer?.slug) continue;
+        const org = reviewer.organization?.login;
+        const qualified = org ? `${org}/${reviewer.slug}` : reviewer.slug;
+        const match = teamBySlug.get(qualified) || teamBySlug.get(reviewer.slug);
+        if (match && !matchedTeams.includes(match)) {
+          matchedTeams.push(match);
+        }
+      }
+
+      // requestedVia: array of identifiers like ['direct', 'elastic/kibana-docs']
+      const requestedVia = [];
+      if (isDirectRequest) requestedVia.push('direct');
+      requestedVia.push(...matchedTeams);
+
+      return {
+        ...pr,
+        myState,
+        latestReview,
+        isDirectRequest,
+        isTeamRequest: matchedTeams.length > 0,
+        matchedTeams,
+        requestedVia,
+        repo: pr.repository?.nameWithOwner || 'unknown'
+      };
+    }).filter(pr => pr.myState !== 'APPROVED' && pr.author?.login !== username);
+
+    allPRs.sort((a, b) => {
+      // Direct requests first, then team requests, then already-reviewed
+      const priorityA = a.isDirectRequest ? 0 : a.isTeamRequest ? 1 : 2;
+      const priorityB = b.isDirectRequest ? 0 : b.isTeamRequest ? 1 : 2;
+      if (priorityA !== priorityB) return priorityA - priorityB;
+
+      const order = { NONE: 0, CHANGES_REQUESTED: 1, COMMENTED: 2, DISMISSED: 3 };
+      const diff = (order[a.myState] ?? 9) - (order[b.myState] ?? 9);
+      if (diff !== 0) return diff;
+
+      return new Date(b.updatedAt) - new Date(a.updatedAt);
+    });
+
+    updateCounts();
+    renderPRs();
+    document.getElementById('status-text').textContent = `Updated ${new Date().toLocaleTimeString()}`;
+
+  } catch (e) {
+    errContainer.innerHTML = `<div class="error-msg">Failed to fetch PRs: ${escapeHtml(e.message)}</div>`;
+    document.getElementById('pr-container').innerHTML = '';
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Refresh';
+  }
+}
+
+function getViaFilteredPRs() {
+  if (!currentRequestedViaFilter) return allPRs;
+  return allPRs.filter(pr => pr.requestedVia.includes(currentRequestedViaFilter));
+}
+
+function updateCounts() {
+  const base = getViaFilteredPRs();
+  const counts = { all: base.length, NONE: 0, COMMENTED: 0, CHANGES_REQUESTED: 0 };
+  base.forEach(pr => {
+    if (counts[pr.myState] !== undefined) counts[pr.myState]++;
+  });
+  document.getElementById('count-all').textContent = counts.all;
+  document.getElementById('count-pending').textContent = counts.NONE;
+  document.getElementById('count-commented').textContent = counts.COMMENTED;
+  document.getElementById('count-changes').textContent = counts.CHANGES_REQUESTED;
+}
+
+function renderPRs() {
+  const container = document.getElementById('pr-container');
+  const base = getViaFilteredPRs();
+  const filtered = currentFilter === 'all'
+    ? base
+    : base.filter(pr => pr.myState === currentFilter);
+
+  if (filtered.length === 0) {
+    container.innerHTML = `
+      <div class="empty-state">
+        <div class="emoji">${currentFilter === 'all' ? '&#x2728;' : '&#x1F50D;'}</div>
+        <p>${currentFilter === 'all' ? 'No pending reviews. You\'re all caught up!' : 'No PRs in this category.'}</p>
+      </div>`;
+    return;
+  }
+
+  // Group by repository
+  const grouped = new Map();
+  for (const pr of filtered) {
+    if (!grouped.has(pr.repo)) grouped.set(pr.repo, []);
+    grouped.get(pr.repo).push(pr);
+  }
+
+  let html = '<ul class="pr-list">';
+  for (const [repo, prs] of grouped) {
+    html += `<li class="repo-group-header">
+      <a href="https://github.com/${repo}" target="_blank">${escapeHtml(repo)}</a>
+      <span class="repo-count">${prs.length}</span>
+    </li>`;
+    html += prs.map(renderPRCard).join('');
+  }
+  html += '</ul>';
+
+  container.innerHTML = html;
+}
+
+function renderPRCard(pr) {
+  const stateClass = {
+    NONE: 'pending',
+    COMMENTED: 'commented',
+    CHANGES_REQUESTED: 'changes',
+    DISMISSED: 'dismissed'
+  }[pr.myState] || 'pending';
+
+  const stateIcon = {
+    NONE: '&#x25CB;',
+    COMMENTED: '&#x1F4AC;',
+    CHANGES_REQUESTED: '&#x21BB;',
+    DISMISSED: '&#x2014;'
+  }[pr.myState] || '?';
+
+  const stateLabel = {
+    NONE: 'Pending',
+    COMMENTED: 'Commented',
+    CHANGES_REQUESTED: 'Changes',
+    DISMISSED: 'Dismissed'
+  }[pr.myState] || pr.myState;
+
+  const labels = (pr.labels?.nodes || []).map(l =>
+    `<span class="pr-label" style="background:#${l.color}22; color:#${l.color}; border-color:#${l.color}44;">${escapeHtml(l.name)}</span>`
+  ).join('');
+
+  const draft = pr.isDraft ? '<span style="color:var(--text-dim);">[Draft]</span> ' : '';
+
+  const viaBadges = pr.requestedVia.map(via => {
+    if (via === 'direct') {
+      return `<span class="pr-via-badge via-direct">@${escapeHtml(localStorage.getItem(STORAGE_KEYS.user))}</span>`;
+    }
+    return `<span class="pr-via-badge via-team">${escapeHtml(via)}</span>`;
+  }).join('');
+
+  return `
+    <li class="pr-card">
+      <div class="pr-status-icon ${stateClass}">${stateIcon}</div>
+      <div class="pr-body">
+        <div class="pr-title-row">
+          <a class="pr-title" href="${pr.url}" target="_blank" rel="noopener">${draft}${escapeHtml(pr.title)}</a>
+          <span class="pr-number">#${pr.number}</span>
+        </div>
+        <div class="pr-meta">
+          <span>by <a href="https://github.com/${pr.author?.login}" target="_blank">@${escapeHtml(pr.author?.login || '?')}</a></span>
+          <span>opened ${timeAgo(pr.createdAt)}</span>
+        </div>
+        ${viaBadges ? `<div class="pr-requested-via">${viaBadges}</div>` : ''}
+        ${labels ? `<div class="pr-labels">${labels}</div>` : ''}
+      </div>
+      <div class="pr-right">
+        <span class="pr-review-status ${stateClass}">${stateLabel}</span>
+        <div class="pr-updated">updated ${timeAgo(pr.updatedAt)}</div>
+      </div>
+    </li>`;
+}
+
+function timeAgo(dateStr) {
+  const seconds = Math.floor((Date.now() - new Date(dateStr)) / 1000);
+  const intervals = [
+    [31536000, 'y'], [2592000, 'mo'], [86400, 'd'],
+    [3600, 'h'], [60, 'm']
+  ];
+  for (const [secs, label] of intervals) {
+    const count = Math.floor(seconds / secs);
+    if (count >= 1) return `${count}${label} ago`;
+  }
+  return 'just now';
+}
+
+function escapeHtml(str) {
+  const d = document.createElement('div');
+  d.textContent = str || '';
+  return d.innerHTML;
+}
+
+init();
+</script>
+</body>
+</html>
