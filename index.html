@@ -4,9 +4,36 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>PR Review Dashboard</title>
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><rect width='16' height='16' rx='3' fill='%230d1117'/><path fill='%2358a6ff' d='M7.177 3.073L9.573.677A.25.25 0 0110 .854v4.792a.25.25 0 01-.427.177L7.177 3.427a.25.25 0 010-.354zM3.75 2.5a.75.75 0 100 1.5.75.75 0 000-1.5zm-2.25.75a2.25 2.25 0 113 2.122v5.256a2.251 2.251 0 11-1.5 0V5.372A2.25 2.25 0 011.5 3.25zM11 2.5h-1V4h1a1 1 0 011 1v5.628a2.251 2.251 0 101.5 0V5A2.5 2.5 0 0011 2.5zm1 10.25a.75.75 0 111.5 0 .75.75 0 01-1.5 0zM3.75 12a.75.75 0 100 1.5.75.75 0 000-1.5z'/></svg>">
+<link rel="icon" id="favicon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><rect width='16' height='16' rx='3' fill='%230969da'/><path fill='%23fff' d='M7.177 3.073L9.573.677A.25.25 0 0110 .854v4.792a.25.25 0 01-.427.177L7.177 3.427a.25.25 0 010-.354zM3.75 2.5a.75.75 0 100 1.5.75.75 0 000-1.5zm-2.25.75a2.25 2.25 0 113 2.122v5.256a2.251 2.251 0 11-1.5 0V5.372A2.25 2.25 0 011.5 3.25zM11 2.5h-1V4h1a1 1 0 011 1v5.628a2.251 2.251 0 101.5 0V5A2.5 2.5 0 0011 2.5zm1 10.25a.75.75 0 111.5 0 .75.75 0 01-1.5 0zM3.75 12a.75.75 0 100 1.5.75.75 0 000-1.5z'/></svg>">
 <style>
-  :root {
+  :root, [data-theme="light"] {
+    --bg: #ffffff;
+    --surface: #f6f8fa;
+    --surface-hover: #eef1f5;
+    --border: #d0d7de;
+    --text: #1f2328;
+    --text-muted: #656d76;
+    --text-dim: #8b949e;
+    --accent: #0969da;
+    --accent-hover: #0550ae;
+    --green: #1a7f37;
+    --yellow: #9a6700;
+    --red: #cf222e;
+    --orange: #bc4c00;
+    --purple: #8250df;
+    --radius: 8px;
+    --badge-green-bg: rgba(31, 127, 55, 0.1);
+    --badge-yellow-bg: rgba(154, 103, 0, 0.1);
+    --badge-red-bg: rgba(207, 34, 46, 0.1);
+    --badge-accent-bg: rgba(9, 105, 218, 0.1);
+    --badge-purple-bg: rgba(130, 80, 223, 0.1);
+    --badge-muted-bg: rgba(139, 148, 158, 0.08);
+    --btn-primary-bg: #1f883d;
+    --btn-primary-hover: #1a7f37;
+    --btn-primary-border: rgba(27, 31, 36, 0.15);
+  }
+
+  [data-theme="dark"] {
     --bg: #0d1117;
     --surface: #161b22;
     --surface-hover: #1c2129;
@@ -22,6 +49,15 @@
     --orange: #db6d28;
     --purple: #bc8cff;
     --radius: 8px;
+    --badge-green-bg: rgba(63, 185, 80, 0.12);
+    --badge-yellow-bg: rgba(210, 153, 34, 0.15);
+    --badge-red-bg: rgba(248, 81, 73, 0.15);
+    --badge-accent-bg: rgba(88, 166, 255, 0.15);
+    --badge-purple-bg: rgba(188, 140, 255, 0.12);
+    --badge-muted-bg: rgba(139, 148, 158, 0.08);
+    --btn-primary-bg: #238636;
+    --btn-primary-hover: #2ea043;
+    --btn-primary-border: rgba(240, 246, 252, 0.1);
   }
 
   * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -81,7 +117,7 @@
 
   input:focus, select:focus {
     border-color: var(--accent);
-    box-shadow: 0 0 0 3px rgba(88, 166, 255, 0.15);
+    box-shadow: 0 0 0 3px var(--badge-accent-bg);
   }
 
   .btn {
@@ -101,11 +137,12 @@
   .btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
   .btn-primary {
-    background: #238636;
-    border-color: rgba(240,246,252,0.1);
+    background: var(--btn-primary-bg);
+    border-color: var(--btn-primary-border);
+    color: #fff;
   }
 
-  .btn-primary:hover { background: #2ea043; }
+  .btn-primary:hover { background: var(--btn-primary-hover); }
   .btn-sm { padding: 4px 10px; font-size: 12px; }
   .btn-danger { color: var(--red); }
   .btn-danger:hover { border-color: var(--red); }
@@ -248,10 +285,10 @@
     margin-top: 2px;
   }
 
-  .pr-status-icon.pending { background: rgba(210, 153, 34, 0.15); color: var(--yellow); }
-  .pr-status-icon.commented { background: rgba(88, 166, 255, 0.15); color: var(--accent); }
-  .pr-status-icon.changes { background: rgba(248, 81, 73, 0.15); color: var(--red); }
-  .pr-status-icon.dismissed { background: rgba(139, 148, 158, 0.15); color: var(--text-muted); }
+  .pr-status-icon.pending { background: var(--badge-yellow-bg); color: var(--yellow); }
+  .pr-status-icon.commented { background: var(--badge-accent-bg); color: var(--accent); }
+  .pr-status-icon.changes { background: var(--badge-red-bg); color: var(--red); }
+  .pr-status-icon.dismissed { background: var(--badge-muted-bg); color: var(--text-muted); }
 
   .pr-body { min-width: 0; }
 
@@ -327,10 +364,10 @@
     white-space: nowrap;
   }
 
-  .pr-review-status.pending { background: rgba(210,153,34,0.15); color: var(--yellow); }
-  .pr-review-status.commented { background: rgba(88,166,255,0.15); color: var(--accent); }
-  .pr-review-status.changes { background: rgba(248,81,73,0.15); color: var(--red); }
-  .pr-review-status.dismissed { background: rgba(139,148,158,0.15); color: var(--text-muted); }
+  .pr-review-status.pending { background: var(--badge-yellow-bg); color: var(--yellow); }
+  .pr-review-status.commented { background: var(--badge-accent-bg); color: var(--accent); }
+  .pr-review-status.changes { background: var(--badge-red-bg); color: var(--red); }
+  .pr-review-status.dismissed { background: var(--badge-muted-bg); color: var(--text-muted); }
 
   .pr-updated {
     font-size: 11px;
@@ -373,8 +410,8 @@
   .empty-state .emoji { font-size: 32px; margin-bottom: 8px; }
 
   .error-msg {
-    background: rgba(248,81,73,0.1);
-    border: 1px solid rgba(248,81,73,0.3);
+    background: var(--badge-red-bg);
+    border: 1px solid var(--red);
     color: var(--red);
     padding: 12px 16px;
     border-radius: var(--radius);
@@ -422,35 +459,33 @@
   }
 
   .teams-info .team-badge {
-    background: rgba(188, 140, 255, 0.12);
+    background: var(--badge-purple-bg);
     color: var(--purple);
   }
 
   .teams-info .team-badge:hover {
-    background: rgba(188, 140, 255, 0.25);
-    border-color: rgba(188, 140, 255, 0.4);
+    opacity: 0.8;
+    border-color: var(--purple);
   }
 
   .teams-info .team-badge.active {
-    background: rgba(188, 140, 255, 0.3);
     border-color: var(--purple);
-    box-shadow: 0 0 0 2px rgba(188, 140, 255, 0.15);
+    box-shadow: 0 0 0 2px var(--badge-purple-bg);
   }
 
   .teams-info .user-badge {
-    background: rgba(88, 166, 255, 0.12);
+    background: var(--badge-accent-bg);
     color: var(--accent);
   }
 
   .teams-info .user-badge:hover {
-    background: rgba(88, 166, 255, 0.25);
-    border-color: rgba(88, 166, 255, 0.4);
+    opacity: 0.8;
+    border-color: var(--accent);
   }
 
   .teams-info .user-badge.active {
-    background: rgba(88, 166, 255, 0.3);
     border-color: var(--accent);
-    box-shadow: 0 0 0 2px rgba(88, 166, 255, 0.15);
+    box-shadow: 0 0 0 2px var(--badge-accent-bg);
   }
 
   .pr-requested-via {
@@ -469,12 +504,12 @@
   }
 
   .pr-via-badge.via-direct {
-    background: rgba(88, 166, 255, 0.12);
+    background: var(--badge-accent-bg);
     color: var(--accent);
   }
 
   .pr-via-badge.via-team {
-    background: rgba(188, 140, 255, 0.12);
+    background: var(--badge-purple-bg);
     color: var(--purple);
   }
 
@@ -503,22 +538,22 @@
   }
 
   .pr-reviewer.rv-approved {
-    background: rgba(63, 185, 80, 0.12);
+    background: var(--badge-green-bg);
     color: var(--green);
   }
 
   .pr-reviewer.rv-changes {
-    background: rgba(248, 81, 73, 0.12);
+    background: var(--badge-red-bg);
     color: var(--red);
   }
 
   .pr-reviewer.rv-commented {
-    background: rgba(88, 166, 255, 0.08);
+    background: var(--badge-muted-bg);
     color: var(--text-muted);
   }
 
   .pr-reviewer.rv-pending {
-    background: rgba(139, 148, 158, 0.08);
+    background: var(--badge-muted-bg);
     color: var(--text-dim);
   }
 
@@ -541,6 +576,27 @@
     background: var(--accent);
     border-radius: 2px;
     transition: width 0.3s;
+  }
+
+  .theme-toggle {
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    transition: all 0.15s;
+    padding: 0;
+  }
+
+  .theme-toggle:hover {
+    color: var(--text);
+    border-color: var(--text-dim);
   }
 
   @media (max-width: 640px) {
@@ -596,6 +652,7 @@
       </h1>
       <div class="header-actions">
         <button class="btn btn-sm" id="refresh-btn" onclick="fetchPRs()">Refresh</button>
+        <button class="theme-toggle" id="theme-toggle" onclick="toggleTheme()" title="Toggle light/dark theme"></button>
         <button class="btn btn-sm btn-danger" onclick="logout()" title="Reset token & sign out">Sign out</button>
       </div>
     </header>
@@ -630,12 +687,27 @@
 </div>
 
 <script>
-const STORAGE_KEYS = { token: 'prd_token', user: 'prd_user', teams: 'prd_teams' };
+const STORAGE_KEYS = { token: 'prd_token', user: 'prd_user', teams: 'prd_teams', theme: 'prd_theme' };
 let allPRs = [];
 let currentFilter = 'all';
 let currentRequestedViaFilter = null; // null = all, 'direct' = only direct, 'org/team-slug' = specific team
 let refreshTimer = null;
 let userTeams = [];
+
+function applyTheme(theme) {
+  document.documentElement.setAttribute('data-theme', theme);
+  localStorage.setItem(STORAGE_KEYS.theme, theme);
+  const btn = document.getElementById('theme-toggle');
+  if (btn) btn.textContent = theme === 'dark' ? '\u2600\uFE0F' : '\uD83C\uDF19';
+}
+
+function toggleTheme() {
+  const current = document.documentElement.getAttribute('data-theme') || 'light';
+  applyTheme(current === 'dark' ? 'light' : 'dark');
+}
+
+// Apply saved theme immediately (before render)
+applyTheme(localStorage.getItem(STORAGE_KEYS.theme) || 'light');
 
 function init() {
   const token = localStorage.getItem(STORAGE_KEYS.token);
