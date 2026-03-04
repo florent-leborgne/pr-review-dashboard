@@ -704,6 +704,7 @@ function applyTheme(theme) {
 function toggleTheme() {
   const current = document.documentElement.getAttribute('data-theme') || 'light';
   applyTheme(current === 'dark' ? 'light' : 'dark');
+  if (allPRs.length > 0) renderPRs();
 }
 
 // Apply saved theme immediately (before render)
@@ -1186,9 +1187,10 @@ function renderPRCard(pr) {
     DISMISSED: 'Dismissed'
   }[pr.myState] || pr.myState;
 
-  const labels = (pr.labels?.nodes || []).map(l =>
-    `<span class="pr-label" style="background:#${l.color}22; color:#${l.color}; border-color:#${l.color}44;">${escapeHtml(l.name)}</span>`
-  ).join('');
+  const labels = (pr.labels?.nodes || []).map(l => {
+    const c = labelColors(l.color);
+    return `<span class="pr-label" style="background:${c.bg}; color:${c.text}; border-color:${c.border};">${escapeHtml(l.name)}</span>`;
+  }).join('');
 
   const draft = pr.isDraft ? '<span style="color:var(--text-dim);">[Draft]</span> ' : '';
 
@@ -1253,6 +1255,78 @@ function timeAgo(dateStr) {
     if (count >= 1) return `${count}${label} ago`;
   }
   return 'just now';
+}
+
+function parseHex(hex) {
+  hex = hex.replace('#', '');
+  return [
+    parseInt(hex.substring(0, 2), 16),
+    parseInt(hex.substring(2, 4), 16),
+    parseInt(hex.substring(4, 6), 16)
+  ];
+}
+
+function relativeLuminance([r, g, b]) {
+  const [rs, gs, bs] = [r, g, b].map(c => {
+    c = c / 255;
+    return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+  });
+  return 0.2126 * rs + 0.7152 * gs + 0.0722 * bs;
+}
+
+function darkenColor([r, g, b], factor) {
+  return [
+    Math.round(r * factor),
+    Math.round(g * factor),
+    Math.round(b * factor)
+  ];
+}
+
+function toHex([r, g, b]) {
+  return '#' + [r, g, b].map(c => c.toString(16).padStart(2, '0')).join('');
+}
+
+function labelColors(hexColor) {
+  const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+  const rgb = parseHex(hexColor);
+  const lum = relativeLuminance(rgb);
+
+  if (isDark) {
+    // On dark backgrounds, brighten very dark colors
+    let textRgb = rgb;
+    if (lum < 0.1) {
+      const factor = 1.6;
+      textRgb = [
+        Math.min(255, Math.round(rgb[0] * factor + 40)),
+        Math.min(255, Math.round(rgb[1] * factor + 40)),
+        Math.min(255, Math.round(rgb[2] * factor + 40))
+      ];
+    }
+    return {
+      text: toHex(textRgb),
+      bg: `#${hexColor}22`,
+      border: `#${hexColor}44`
+    };
+  }
+
+  // On light backgrounds, darken until contrast ratio against white >= 4.5
+  let textRgb = rgb;
+  const whiteLum = 1.0;
+  let textLum = lum;
+  let factor = 1;
+  while (factor > 0.2) {
+    const ratio = (whiteLum + 0.05) / (textLum + 0.05);
+    if (ratio >= 4.5) break;
+    factor -= 0.05;
+    textRgb = darkenColor(rgb, factor);
+    textLum = relativeLuminance(textRgb);
+  }
+
+  return {
+    text: toHex(textRgb),
+    bg: toHex(rgb) + '18',
+    border: toHex(rgb) + '40'
+  };
 }
 
 function escapeHtml(str) {
