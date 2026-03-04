@@ -365,6 +365,21 @@
     white-space: nowrap;
   }
 
+  .pr-blocking {
+    font-size: 10px;
+    font-weight: 600;
+    margin-top: 4px;
+    white-space: nowrap;
+  }
+
+  .pr-blocking.sole-blocker {
+    color: var(--red);
+  }
+
+  .pr-blocking.shared {
+    color: var(--text-dim);
+  }
+
   .loading {
     text-align: center;
     padding: 60px 20px;
@@ -1196,6 +1211,17 @@ function renderPRCard(pr) {
     return `<span class="pr-reviewer ${cls}"><span class="rv-icon">${icon}</span> ${escapeHtml(r.login)}</span>`;
   }).join('');
 
+  const pendingOthers = (pr.otherReviewers || []).filter(r => r.state === 'PENDING').length;
+  const iAmPending = pr.myState === 'NONE' || pr.myState === 'COMMENTED';
+  let blockingHtml = '';
+  if (iAmPending && pendingOthers === 0) {
+    blockingHtml = '<div class="pr-blocking sole-blocker">Waiting on you only</div>';
+  } else if (iAmPending && pendingOthers > 0) {
+    blockingHtml = `<div class="pr-blocking shared">You + ${pendingOthers} other${pendingOthers > 1 ? 's' : ''} pending</div>`;
+  } else if (!iAmPending && pendingOthers > 0) {
+    blockingHtml = `<div class="pr-blocking shared">${pendingOthers} other${pendingOthers > 1 ? 's' : ''} pending</div>`;
+  }
+
   return `
     <li class="pr-card ${stateClass}">
       <div class="pr-body">
@@ -1213,6 +1239,7 @@ function renderPRCard(pr) {
       </div>
       <div class="pr-right">
         <span class="pr-review-status ${stateClass}">${stateLabel}</span>
+        ${blockingHtml}
         <div class="pr-updated">updated ${timeAgo(pr.updatedAt)}</div>
       </div>
     </li>`;
