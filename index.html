@@ -380,6 +380,61 @@
     color: var(--text-dim);
   }
 
+  .pr-dismiss {
+    background: none;
+    border: none;
+    color: var(--text-dim);
+    cursor: pointer;
+    font-size: 14px;
+    padding: 2px 4px;
+    border-radius: 4px;
+    opacity: 0;
+    transition: opacity 0.15s, color 0.15s;
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    line-height: 1;
+  }
+
+  .pr-card { position: relative; }
+
+  .pr-card:hover .pr-dismiss { opacity: 1; }
+  .pr-dismiss:hover { color: var(--text); }
+
+  .pr-card.dismissed-card {
+    opacity: 0.45;
+  }
+
+  .pr-card.dismissed-card:hover { opacity: 0.7; }
+
+  .dismissed-section {
+    margin-top: 24px;
+  }
+
+  .dismissed-toggle {
+    background: none;
+    border: none;
+    color: var(--text-dim);
+    font-size: 12px;
+    cursor: pointer;
+    padding: 4px 0;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .dismissed-toggle:hover { color: var(--text-muted); }
+
+  .dismissed-toggle .arrow {
+    display: inline-block;
+    transition: transform 0.15s;
+    font-size: 10px;
+  }
+
+  .dismissed-toggle .arrow.open {
+    transform: rotate(90deg);
+  }
+
   .loading {
     text-align: center;
     padding: 60px 20px;
@@ -690,10 +745,54 @@
 </div>
 
 <script>
-const STORAGE_KEYS = { token: 'prd_token', user: 'prd_user', teams: 'prd_teams', theme: 'prd_theme' };
+const STORAGE_KEYS = { token: 'prd_token', user: 'prd_user', teams: 'prd_teams', theme: 'prd_theme', dismissed: 'prd_dismissed' };
 let allPRs = [];
 let currentFilter = 'all';
 let currentRequestedViaFilter = null; // null = all, 'direct' = only direct, 'org/team-slug' = specific team
+let dismissedShowExpanded = false;
+
+// Dismissed PRs: Map of "repo#number" -> updatedAt timestamp at time of dismissal
+function getDismissed() {
+  try { return JSON.parse(localStorage.getItem(STORAGE_KEYS.dismissed) || '{}'); }
+  catch { return {}; }
+}
+
+function saveDismissed(dismissed) {
+  localStorage.setItem(STORAGE_KEYS.dismissed, JSON.stringify(dismissed));
+}
+
+function dismissPR(prKey, updatedAt) {
+  const dismissed = getDismissed();
+  dismissed[prKey] = updatedAt;
+  saveDismissed(dismissed);
+  updateCounts();
+  renderPRs();
+}
+
+function restorePR(prKey) {
+  const dismissed = getDismissed();
+  delete dismissed[prKey];
+  saveDismissed(dismissed);
+  updateCounts();
+  renderPRs();
+}
+
+function prKey(pr) {
+  return `${pr.repo}#${pr.number}`;
+}
+
+function isDismissed(pr) {
+  const dismissed = getDismissed();
+  const key = prKey(pr);
+  if (!(key in dismissed)) return false;
+  // Auto-resurface if PR was updated after dismissal
+  if (pr.updatedAt > dismissed[key]) {
+    delete dismissed[key];
+    saveDismissed(dismissed);
+    return false;
+  }
+  return true;
+}
 let refreshTimer = null;
 let userTeams = [];
 
@@ -1111,13 +1210,15 @@ function getViaFilteredPRs() {
   let prs = allPRs;
   if (!showDrafts) prs = prs.filter(pr => !pr.isDraft);
   if (currentRequestedViaFilter) prs = prs.filter(pr => pr.requestedVia.includes(currentRequestedViaFilter));
-  return prs;
+  const active = prs.filter(pr => !isDismissed(pr));
+  const dismissed = prs.filter(pr => isDismissed(pr));
+  return { active, dismissed };
 }
 
 function updateCounts() {
-  const base = getViaFilteredPRs();
-  const counts = { all: base.length, NONE: 0, COMMENTED: 0, CHANGES_REQUESTED: 0 };
-  base.forEach(pr => {
+  const { active } = getViaFilteredPRs();
+  const counts = { all: active.length, NONE: 0, COMMENTED: 0, CHANGES_REQUESTED: 0 };
+  active.forEach(pr => {
     if (counts[pr.myState] !== undefined) counts[pr.myState]++;
   });
   document.getElementById('count-all').textContent = counts.all;
@@ -1126,43 +1227,72 @@ function updateCounts() {
   document.getElementById('count-changes').textContent = counts.CHANGES_REQUESTED;
 }
 
-function renderPRs() {
-  const container = document.getElementById('pr-container');
-  const base = getViaFilteredPRs();
-  const filtered = currentFilter === 'all'
-    ? base
-    : base.filter(pr => pr.myState === currentFilter);
-
-  if (filtered.length === 0) {
-    container.innerHTML = `
-      <div class="empty-state">
-        <div class="emoji">${currentFilter === 'all' ? '&#x2728;' : '&#x1F50D;'}</div>
-        <p>${currentFilter === 'all' ? 'No pending reviews. You\'re all caught up!' : 'No PRs in this category.'}</p>
-      </div>`;
-    return;
-  }
-
-  // Group by repository
+function renderGroupedList(prs, isDismissedList) {
   const grouped = new Map();
-  for (const pr of filtered) {
+  for (const pr of prs) {
     if (!grouped.has(pr.repo)) grouped.set(pr.repo, []);
     grouped.get(pr.repo).push(pr);
   }
 
   let html = '<ul class="pr-list">';
-  for (const [repo, prs] of grouped) {
+  for (const [repo, repoPrs] of grouped) {
     html += `<li class="repo-group-header">
       <a href="https://github.com/${repo}" target="_blank">${escapeHtml(repo)}</a>
-      <span class="repo-count">${prs.length}</span>
+      <span class="repo-count">${repoPrs.length}</span>
     </li>`;
-    html += prs.map(renderPRCard).join('');
+    html += repoPrs.map(pr => renderPRCard(pr, isDismissedList)).join('');
   }
   html += '</ul>';
+  return html;
+}
+
+function renderPRs() {
+  const container = document.getElementById('pr-container');
+  const { active, dismissed } = getViaFilteredPRs();
+  const filtered = currentFilter === 'all'
+    ? active
+    : active.filter(pr => pr.myState === currentFilter);
+  const filteredDismissed = currentFilter === 'all'
+    ? dismissed
+    : dismissed.filter(pr => pr.myState === currentFilter);
+
+  let html = '';
+
+  if (filtered.length === 0 && filteredDismissed.length === 0) {
+    html = `
+      <div class="empty-state">
+        <div class="emoji">${currentFilter === 'all' ? '&#x2728;' : '&#x1F50D;'}</div>
+        <p>${currentFilter === 'all' ? 'No pending reviews. You\'re all caught up!' : 'No PRs in this category.'}</p>
+      </div>`;
+  } else if (filtered.length === 0) {
+    html = `
+      <div class="empty-state">
+        <p>No active PRs${currentFilter !== 'all' ? ' in this category' : ''}.</p>
+      </div>`;
+  } else {
+    html = renderGroupedList(filtered, false);
+  }
+
+  if (filteredDismissed.length > 0) {
+    const arrowClass = dismissedShowExpanded ? 'arrow open' : 'arrow';
+    html += `<div class="dismissed-section">
+      <button class="dismissed-toggle" onclick="toggleDismissedSection()">
+        <span class="${arrowClass}">&#x25B6;</span>
+        ${filteredDismissed.length} dismissed
+      </button>
+      ${dismissedShowExpanded ? renderGroupedList(filteredDismissed, true) : ''}
+    </div>`;
+  }
 
   container.innerHTML = html;
 }
 
-function renderPRCard(pr) {
+function toggleDismissedSection() {
+  dismissedShowExpanded = !dismissedShowExpanded;
+  renderPRs();
+}
+
+function renderPRCard(pr, isDismissedCard = false) {
   const stateClass = {
     NONE: 'pending',
     COMMENTED: 'commented',
@@ -1224,8 +1354,16 @@ function renderPRCard(pr) {
     blockingHtml = `<div class="pr-blocking shared">${pendingOthers} other${pendingOthers > 1 ? 's' : ''} pending</div>`;
   }
 
+  const key = prKey(pr);
+  const escapedKey = escapeHtml(key);
+  const dismissedClass = isDismissedCard ? ' dismissed-card' : '';
+  const actionBtn = isDismissedCard
+    ? `<button class="pr-dismiss" style="opacity:1;" onclick="restorePR('${escapedKey}')" title="Restore">&#x21A9;</button>`
+    : `<button class="pr-dismiss" onclick="dismissPR('${escapedKey}', '${pr.updatedAt}')" title="Dismiss">&#x2715;</button>`;
+
   return `
-    <li class="pr-card ${stateClass}">
+    <li class="pr-card ${stateClass}${dismissedClass}">
+      ${actionBtn}
       <div class="pr-body">
         <div class="pr-title-row">
           <a class="pr-title" href="${pr.url}" target="_blank" rel="noopener">${draft}${escapeHtml(pr.title)}</a>
