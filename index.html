@@ -239,6 +239,8 @@
     gap: 6px;
     border-bottom: 1px solid var(--border);
     margin-bottom: 8px;
+    cursor: pointer;
+    user-select: none;
   }
 
   .repo-group-header:first-child { padding-top: 0; }
@@ -249,6 +251,16 @@
   }
 
   .repo-group-header a:hover { color: var(--accent); }
+
+  .repo-group-header .collapse-arrow {
+    font-size: 10px;
+    transition: transform 0.15s;
+    color: var(--text-dim);
+  }
+
+  .repo-group-header .collapse-arrow.collapsed {
+    transform: rotate(-90deg);
+  }
 
   .repo-group-header .repo-count {
     background: var(--border);
@@ -505,6 +517,17 @@
     flex-wrap: wrap;
   }
 
+  .teams-info .team-badge.muted,
+  .teams-info .user-badge.muted {
+    opacity: 0.35;
+    text-decoration: line-through;
+  }
+
+  .teams-info .team-badge.muted:hover,
+  .teams-info .user-badge.muted:hover {
+    opacity: 0.6;
+  }
+
   .teams-info .team-badge,
   .teams-info .user-badge {
     padding: 2px 8px;
@@ -745,7 +768,7 @@
 </div>
 
 <script>
-const STORAGE_KEYS = { token: 'prd_token', user: 'prd_user', teams: 'prd_teams', theme: 'prd_theme', dismissed: 'prd_dismissed' };
+const STORAGE_KEYS = { token: 'prd_token', user: 'prd_user', teams: 'prd_teams', theme: 'prd_theme', dismissed: 'prd_dismissed', collapsedRepos: 'prd_collapsed_repos', mutedTeams: 'prd_muted_teams' };
 let allPRs = [];
 let currentFilter = 'all';
 let currentRequestedViaFilter = null; // null = all, 'direct' = only direct, 'org/team-slug' = specific team
@@ -793,6 +816,37 @@ function isDismissed(pr) {
   }
   return true;
 }
+
+function getCollapsedRepos() {
+  try { return JSON.parse(localStorage.getItem(STORAGE_KEYS.collapsedRepos) || '[]'); }
+  catch { return []; }
+}
+
+function toggleRepoCollapse(repo) {
+  const collapsed = getCollapsedRepos();
+  const idx = collapsed.indexOf(repo);
+  if (idx >= 0) collapsed.splice(idx, 1);
+  else collapsed.push(repo);
+  localStorage.setItem(STORAGE_KEYS.collapsedRepos, JSON.stringify(collapsed));
+  renderPRs();
+}
+
+function getMutedTeams() {
+  try { return JSON.parse(localStorage.getItem(STORAGE_KEYS.mutedTeams) || '[]'); }
+  catch { return []; }
+}
+
+function toggleMuteTeam(teamOrDirect) {
+  const muted = getMutedTeams();
+  const idx = muted.indexOf(teamOrDirect);
+  if (idx >= 0) muted.splice(idx, 1);
+  else muted.push(teamOrDirect);
+  localStorage.setItem(STORAGE_KEYS.mutedTeams, JSON.stringify(muted));
+  renderTeamsInfo();
+  updateCounts();
+  renderPRs();
+}
+
 let refreshTimer = null;
 let userTeams = [];
 
@@ -958,9 +1012,11 @@ async function fetchTeams() {
 function renderTeamsInfo() {
   const container = document.getElementById('teams-container');
   const username = localStorage.getItem(STORAGE_KEYS.user);
+  const muted = getMutedTeams();
 
+  const directMuted = muted.includes('direct') ? ' muted' : '';
   const directActive = currentRequestedViaFilter === 'direct' ? ' active' : '';
-  const userBadge = `<span class="user-badge${directActive}" data-via-filter="direct">@${escapeHtml(username)}</span>`;
+  const userBadge = `<span class="user-badge${directActive}${directMuted}" data-via-filter="direct" data-mute-target="direct">@${escapeHtml(username)}</span>`;
 
   if (userTeams.length === 0) {
     container.innerHTML = `<div class="teams-info">
@@ -970,11 +1026,13 @@ function renderTeamsInfo() {
   } else {
     const teamBadges = userTeams.map(t => {
       const isActive = currentRequestedViaFilter === t.qualified ? ' active' : '';
-      return `<span class="team-badge${isActive}" data-via-filter="${escapeHtml(t.qualified)}">${escapeHtml(t.qualified)}</span>`;
+      const isMuted = muted.includes(t.qualified) ? ' muted' : '';
+      return `<span class="team-badge${isActive}${isMuted}" data-via-filter="${escapeHtml(t.qualified)}" data-mute-target="${escapeHtml(t.qualified)}">${escapeHtml(t.qualified)}</span>`;
     }).join('');
 
     container.innerHTML = `<div class="teams-info">
       Tracking reviews for ${userBadge} ${teamBadges}
+      <span style="color:var(--text-dim); font-size:10px; margin-left:4px;" title="Click to filter. Double-click to mute/unmute.">click: filter · double-click: mute</span>
     </div>`;
   }
 
@@ -982,10 +1040,25 @@ function renderTeamsInfo() {
     const badge = e.target.closest('[data-via-filter]');
     if (!badge) return;
     const filterValue = badge.dataset.viaFilter;
+    // If muted, single click restores it
+    if (badge.classList.contains('muted')) {
+      toggleMuteTeam(filterValue);
+      return;
+    }
     currentRequestedViaFilter = currentRequestedViaFilter === filterValue ? null : filterValue;
     renderTeamsInfo();
     updateCounts();
     renderPRs();
+  });
+
+  container.querySelector('.teams-info').addEventListener('dblclick', (e) => {
+    const badge = e.target.closest('[data-mute-target]');
+    if (!badge) return;
+    e.preventDefault();
+    const target = badge.dataset.muteTarget;
+    // Clear filter if we're muting the currently filtered team
+    if (currentRequestedViaFilter === target) currentRequestedViaFilter = null;
+    toggleMuteTeam(target);
   });
 }
 
@@ -1207,9 +1280,17 @@ async function fetchPRs() {
 
 function getViaFilteredPRs() {
   const showDrafts = document.getElementById('show-drafts')?.checked ?? true;
+  const muted = getMutedTeams();
   let prs = allPRs;
   if (!showDrafts) prs = prs.filter(pr => !pr.isDraft);
   if (currentRequestedViaFilter) prs = prs.filter(pr => pr.requestedVia.includes(currentRequestedViaFilter));
+  // Exclude PRs whose only requestedVia entries are all muted
+  if (muted.length > 0) {
+    prs = prs.filter(pr => {
+      if (pr.requestedVia.length === 0) return true;
+      return pr.requestedVia.some(via => !muted.includes(via));
+    });
+  }
   const active = prs.filter(pr => !isDismissed(pr));
   const dismissed = prs.filter(pr => isDismissed(pr));
   return { active, dismissed };
@@ -1234,13 +1315,20 @@ function renderGroupedList(prs, isDismissedList) {
     grouped.get(pr.repo).push(pr);
   }
 
+  const collapsed = getCollapsedRepos();
+
   let html = '<ul class="pr-list">';
   for (const [repo, repoPrs] of grouped) {
-    html += `<li class="repo-group-header">
-      <a href="https://github.com/${repo}" target="_blank">${escapeHtml(repo)}</a>
+    const isCollapsed = collapsed.includes(repo);
+    const arrowClass = isCollapsed ? 'collapse-arrow collapsed' : 'collapse-arrow';
+    html += `<li class="repo-group-header" onclick="toggleRepoCollapse('${escapeHtml(repo)}')">
+      <span class="${arrowClass}">&#x25BC;</span>
+      <a href="https://github.com/${repo}" target="_blank" onclick="event.stopPropagation()">${escapeHtml(repo)}</a>
       <span class="repo-count">${repoPrs.length}</span>
     </li>`;
-    html += repoPrs.map(pr => renderPRCard(pr, isDismissedList)).join('');
+    if (!isCollapsed) {
+      html += repoPrs.map(pr => renderPRCard(pr, isDismissedList)).join('');
+    }
   }
   html += '</ul>';
   return html;
