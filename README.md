@@ -55,6 +55,16 @@ Simpler setup, broader access.
 
 [Create one](https://github.com/settings/tokens/new?scopes=repo,read:org&description=PR+Review+Dashboard) with `repo` and `read:org` scopes.
 
+### Authorize SSO for Elastic org repos
+
+If you need to access repositories in an organization that uses SAML SSO (e.g. the `elastic` org), you must authorize your token for SSO after creating it:
+
+1. Go to [Settings → Personal access tokens](https://github.com/settings/tokens)
+2. Next to your token, click **Configure SSO**
+3. Click **Authorize** next to the `elastic` organization
+
+Without this step, API requests to Elastic org repositories will return `404` even if the token has the correct scopes.
+
 ## How it works
 
 The dashboard runs three types of GitHub search queries in parallel using the GitHub GraphQL API:
