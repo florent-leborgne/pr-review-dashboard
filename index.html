@@ -696,24 +696,21 @@
     <p>Track pull requests you need to review across all repositories, including team-based review requests.</p>
 
     <label for="token-input">GitHub Personal Access Token</label>
-    <input type="password" id="token-input" placeholder="ghp_... or github_pat_...">
+    <input type="password" id="token-input" placeholder="ghp_...">
     <p class="hint">
       Your token is stored <strong>only</strong> in your browser's <code>localStorage</code> and is never sent anywhere except directly to the GitHub API.
     </p>
 
     <details style="margin-bottom:16px; font-size:12px; color:var(--text-muted);">
-      <summary style="cursor:pointer; color:var(--accent); font-weight:500;">Which token type should I use?</summary>
+      <summary style="cursor:pointer; color:var(--accent); font-weight:500;">How do I create a token?</summary>
       <div style="margin-top:8px; line-height:1.6;">
-        <strong style="color:var(--text);">Fine-grained PAT (recommended)</strong><br>
-        More secure: scoped to specific repos/orgs, with an expiration date.<br>
-        Go to <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" style="color:var(--accent);">Settings &rarr; Fine-grained tokens</a> and grant:<br>
-        &bull; <strong>Repository access</strong>: All repositories (or select the repos you review)<br>
-        &bull; <strong>Organization permissions</strong>: Members &rarr; <code>read</code> (to detect your teams)<br>
-        &bull; <strong>Repository permissions</strong>: Pull requests &rarr; <code>read</code>, Metadata &rarr; <code>read</code><br>
-        &bull; Set an expiration (e.g. 90 days)<br><br>
-        <strong style="color:var(--text);">Classic PAT</strong><br>
-        Simpler to set up, broader access.<br>
-        <a href="https://github.com/settings/tokens/new?scopes=repo,read:org&description=PR+Review+Dashboard" target="_blank" style="color:var(--accent);">Create one</a> with <code>repo</code> and <code>read:org</code> scopes.
+        <a href="https://github.com/settings/tokens/new?scopes=repo,read:org&description=PR+Review+Dashboard" target="_blank" style="color:var(--accent);">Create a classic token</a> with these scopes:<br>
+        &bull; <code>repo</code> &mdash; access to pull requests across your repositories<br>
+        &bull; <code>read:org</code> &mdash; needed to detect your team memberships<br><br>
+        <strong style="color:var(--text);">Elastic org (SSO)</strong><br>
+        If you access repos in an org that uses SAML SSO (e.g. <code>elastic</code>), go to
+        <a href="https://github.com/settings/tokens" target="_blank" style="color:var(--accent);">Settings &rarr; Tokens</a>,
+        click <strong>Configure SSO</strong> next to your token, then <strong>Authorize</strong> the organization.
       </div>
     </details>
 

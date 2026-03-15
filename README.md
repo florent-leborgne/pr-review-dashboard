@@ -39,21 +39,12 @@ open index.html
 
 Your token is stored **only** in your browser's `localStorage` and is sent exclusively to `api.github.com`. It never touches any other server.
 
-### Fine-grained PAT (recommended)
+### Create a classic PAT
 
-More secure — scoped to specific permissions with an expiration date.
+[Create a classic token](https://github.com/settings/tokens/new?scopes=repo,read:org&description=PR+Review+Dashboard) with these scopes:
 
-1. Go to [Settings → Fine-grained tokens](https://github.com/settings/personal-access-tokens/new)
-2. Set a token name and expiration (e.g. 90 days)
-3. **Repository access**: "All repositories" (or select the specific repos you review)
-4. **Organization permissions**: Members → `read` (needed to detect your teams)
-5. **Repository permissions**: Pull requests → `read`, Metadata → `read`
-
-### Classic PAT
-
-Simpler setup, broader access.
-
-[Create one](https://github.com/settings/tokens/new?scopes=repo,read:org&description=PR+Review+Dashboard) with `repo` and `read:org` scopes.
+- **`repo`** — access to pull requests across your repositories
+- **`read:org`** — needed to detect your team memberships
 
 ### Authorize SSO for Elastic org repos
 
