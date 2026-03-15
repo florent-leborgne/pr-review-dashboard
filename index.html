@@ -698,21 +698,9 @@
     <label for="token-input">GitHub Personal Access Token</label>
     <input type="password" id="token-input" placeholder="ghp_...">
     <p class="hint">
-      Your token is stored <strong>only</strong> in your browser's <code>localStorage</code> and is never sent anywhere except directly to the GitHub API.
+      Use a <a href="https://github.com/settings/tokens/new?scopes=repo,read:org&description=PR+Review+Dashboard" target="_blank" style="color:var(--accent);">classic token</a> with <code>repo</code> and <code>read:org</code> scopes, then <a href="https://github.com/settings/tokens" target="_blank" style="color:var(--accent);">configure SSO</a> for it so it can read your organization's repositories.
+      Your token is stored only in your browser and sent directly to the GitHub API.
     </p>
-
-    <details style="margin-bottom:16px; font-size:12px; color:var(--text-muted);">
-      <summary style="cursor:pointer; color:var(--accent); font-weight:500;">How do I create a token?</summary>
-      <div style="margin-top:8px; line-height:1.6;">
-        <a href="https://github.com/settings/tokens/new?scopes=repo,read:org&description=PR+Review+Dashboard" target="_blank" style="color:var(--accent);">Create a classic token</a> with these scopes:<br>
-        &bull; <code>repo</code> &mdash; access to pull requests across your repositories<br>
-        &bull; <code>read:org</code> &mdash; needed to detect your team memberships<br><br>
-        <strong style="color:var(--text);">Elastic org (SSO)</strong><br>
-        If you access repos in an org that uses SAML SSO (e.g. <code>elastic</code>), go to
-        <a href="https://github.com/settings/tokens" target="_blank" style="color:var(--accent);">Settings &rarr; Tokens</a>,
-        click <strong>Configure SSO</strong> next to your token, then <strong>Authorize</strong> the organization.
-      </div>
-    </details>
 
     <label for="user-input-setup">GitHub username (optional, auto-detected)</label>
     <input type="text" id="user-input-setup" placeholder="auto-detect">
