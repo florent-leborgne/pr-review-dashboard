@@ -21,19 +21,8 @@ GitHub's built-in search can tell you which PRs you're "involved" in, but can't 
 
 ## Usage
 
-### Option 1: GitHub Pages (recommended for teams)
-
-1. Fork or clone this repo
-2. Enable GitHub Pages in Settings → Pages → Source: `main` / root
-3. Visit `https://<your-username>.github.io/pr-review-dashboard/`
-4. Enter your GitHub PAT on first visit (stored in your browser only)
-
-### Option 2: Open locally
-
-```bash
-open index.html
-# or just double-click the file
-```
+1. Open [**the dashboard**](https://florent-leborgne.github.io/pr-review-dashboard/)
+2. Enter your GitHub PAT on first visit (stored in your browser only)
 
 ## Token setup
 
