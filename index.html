@@ -1252,7 +1252,7 @@
 </footer>
 
 <script>
-const STORAGE_KEYS = { token: 'prd_token', user: 'prd_user', teams: 'prd_teams', theme: 'prd_theme', dismissed: 'prd_dismissed', collapsedRepos: 'prd_collapsed_repos', mutedTeams: 'prd_muted_teams', botLogins: 'prd_bot_logins', showDrafts: 'prd_show_drafts', view: 'prd_view' };
+const STORAGE_KEYS = { token: 'prd_token', user: 'prd_user', teams: 'prd_teams', theme: 'prd_theme', dismissed: 'prd_dismissed', collapsedRepos: 'prd_collapsed_repos', collapsedMyRepos: 'prd_collapsed_my_repos', mutedTeams: 'prd_muted_teams', botLogins: 'prd_bot_logins', showDrafts: 'prd_show_drafts', view: 'prd_view' };
 const DEFAULT_BOT_LOGINS = ['elasticmachine', 'macroscopeapp'];
 let allPRs = [];
 let currentFilter = 'all';
@@ -1352,6 +1352,20 @@ function toggleRepoCollapse(repo) {
   else collapsed.push(repo);
   localStorage.setItem(STORAGE_KEYS.collapsedRepos, JSON.stringify(collapsed));
   renderPRs();
+}
+
+function getCollapsedMyRepos() {
+  try { return JSON.parse(localStorage.getItem(STORAGE_KEYS.collapsedMyRepos) || '[]'); }
+  catch { return []; }
+}
+
+function toggleMyRepoCollapse(repo) {
+  const collapsed = getCollapsedMyRepos();
+  const idx = collapsed.indexOf(repo);
+  if (idx >= 0) collapsed.splice(idx, 1);
+  else collapsed.push(repo);
+  localStorage.setItem(STORAGE_KEYS.collapsedMyRepos, JSON.stringify(collapsed));
+  renderMyPRs();
 }
 
 function getMutedTeams() {
@@ -2530,13 +2544,19 @@ function renderMyPRs() {
     grouped.get(pr.repo).push(pr);
   }
 
+  const collapsed = getCollapsedMyRepos();
   let html = '<ul class="pr-list">';
   for (const [repo, repoPrs] of grouped) {
-    html += `<li class="repo-group-header" style="cursor:default;">
+    const isCollapsed = collapsed.includes(repo);
+    const arrowClass = isCollapsed ? 'collapse-arrow collapsed' : 'collapse-arrow';
+    html += `<li class="repo-group-header" onclick="toggleMyRepoCollapse('${escapeHtml(repo)}')">
+      <span class="${arrowClass}">${octicon('chevron-down', 12)}</span>
       <a href="https://github.com/${repo}" target="_blank" onclick="event.stopPropagation()">${escapeHtml(repo)}</a>
       <span class="repo-count">${repoPrs.length}</span>
     </li>`;
-    html += repoPrs.map(pr => renderMyPRCard(pr)).join('');
+    if (!isCollapsed) {
+      html += repoPrs.map(pr => renderMyPRCard(pr)).join('');
+    }
   }
   html += '</ul>';
   container.innerHTML = html;
