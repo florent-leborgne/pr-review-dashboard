@@ -1,106 +1,261 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="light">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>PR Review Dashboard</title>
-<link rel="icon" id="favicon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><rect width='16' height='16' rx='3' fill='%230969da'/><path fill='%23fff' d='M7.177 3.073L9.573.677A.25.25 0 0110 .854v4.792a.25.25 0 01-.427.177L7.177 3.427a.25.25 0 010-.354zM3.75 2.5a.75.75 0 100 1.5.75.75 0 000-1.5zm-2.25.75a2.25 2.25 0 113 2.122v5.256a2.251 2.251 0 11-1.5 0V5.372A2.25 2.25 0 011.5 3.25zM11 2.5h-1V4h1a1 1 0 011 1v5.628a2.251 2.251 0 101.5 0V5A2.5 2.5 0 0011 2.5zm1 10.25a.75.75 0 111.5 0 .75.75 0 01-1.5 0zM3.75 12a.75.75 0 100 1.5.75.75 0 000-1.5z'/></svg>">
+<link rel="icon" type="image/png" sizes="32x32" href="img/icon-32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="img/icon-16.png">
+<link rel="icon" type="image/png" sizes="192x192" href="img/icon-192.png">
+<link rel="apple-touch-icon" sizes="180x180" href="img/icon-180.png">
+<link rel="shortcut icon" href="img/favicon.ico">
 <style>
+  /* ── Theme tokens ──────────────────────────────────── */
   :root, [data-theme="light"] {
-    --bg: #ffffff;
-    --surface: #f6f8fa;
-    --surface-hover: #eef1f5;
+    --bg: #f6f8fa;
+    --surface: #ffffff;
+    --surface-2: #f6f8fa;
+    --surface-hover: #f0f3f6;
     --border: #d0d7de;
+    --border-muted: #e1e4e8;
     --text: #1f2328;
     --text-muted: #656d76;
     --text-dim: #8b949e;
-    --accent: #0969da;
-    --accent-hover: #0550ae;
+    --accent: #00bfb3;
+    --accent-hover: #009d93;
+    --accent-deep: #0077cc;
     --green: #1a7f37;
     --yellow: #9a6700;
     --red: #cf222e;
     --orange: #bc4c00;
     --purple: #8250df;
+    --gold: #c9b97a;
+    --gold-strong: #e8a100;
     --radius: 8px;
-    --badge-green-bg: rgba(31, 127, 55, 0.1);
-    --badge-yellow-bg: rgba(154, 103, 0, 0.1);
-    --badge-red-bg: rgba(207, 34, 46, 0.1);
-    --badge-accent-bg: rgba(9, 105, 218, 0.1);
-    --badge-purple-bg: rgba(130, 80, 223, 0.1);
-    --badge-muted-bg: rgba(139, 148, 158, 0.08);
-    --btn-primary-bg: #1f883d;
-    --btn-primary-hover: #1a7f37;
+    --badge-green-bg: rgba(26, 127, 55, 0.10);
+    --badge-yellow-bg: rgba(154, 103, 0, 0.10);
+    --badge-red-bg: rgba(207, 34, 46, 0.10);
+    --badge-red-strong-bg: rgba(207, 34, 46, 0.18);
+    --badge-red-ring: rgba(207, 34, 46, 0.35);
+    --badge-accent-bg: rgba(0, 191, 179, 0.12);
+    --badge-purple-bg: rgba(130, 80, 223, 0.10);
+    --badge-muted-bg: rgba(139, 148, 158, 0.10);
+    --elastic-blue: #0877c4;
+    --badge-blue-bg: rgba(27, 169, 245, 0.10);
+    --badge-blue-border: rgba(27, 169, 245, 0.30);
+    --badge-gold-bg: rgba(232, 161, 0, 0.16);
+    --badge-gold-ring: rgba(232, 161, 0, 0.45);
+    --badge-gold-bg-strong: rgba(232, 161, 0, 0.18);
+    --badge-gold-ring-strong: rgba(232, 161, 0, 0.55);
+    --btn-primary-bg: var(--accent);
+    --btn-primary-hover: var(--accent-hover);
     --btn-primary-border: rgba(27, 31, 36, 0.15);
+    --shadow-card: 0 1px 0 rgba(31, 35, 40, 0.04);
+    --shadow-card-hover: 0 2px 8px rgba(31, 35, 40, 0.08);
+    --shadow-header: 0 1px 3px rgba(31, 35, 40, 0.06);
   }
 
   [data-theme="dark"] {
     --bg: #0d1117;
     --surface: #161b22;
-    --surface-hover: #1c2129;
+    --surface-2: #1c2129;
+    --surface-hover: #21262d;
     --border: #30363d;
+    --border-muted: #21262d;
     --text: #e6edf3;
     --text-muted: #8b949e;
     --text-dim: #6e7681;
-    --accent: #58a6ff;
-    --accent-hover: #79bbff;
+    --accent: #2dd4c5;
+    --accent-hover: #5fe6da;
+    --accent-deep: #58a6ff;
     --green: #3fb950;
     --yellow: #d29922;
     --red: #f85149;
     --orange: #db6d28;
     --purple: #bc8cff;
+    --gold: #c9b97a;
+    --gold-strong: #ffc83d;
     --radius: 8px;
     --badge-green-bg: rgba(63, 185, 80, 0.12);
     --badge-yellow-bg: rgba(210, 153, 34, 0.15);
     --badge-red-bg: rgba(248, 81, 73, 0.15);
-    --badge-accent-bg: rgba(88, 166, 255, 0.15);
+    --badge-red-strong-bg: rgba(248, 81, 73, 0.28);
+    --badge-red-ring: rgba(248, 81, 73, 0.45);
+    --badge-accent-bg: rgba(45, 212, 197, 0.15);
     --badge-purple-bg: rgba(188, 140, 255, 0.12);
-    --badge-muted-bg: rgba(139, 148, 158, 0.08);
-    --btn-primary-bg: #238636;
-    --btn-primary-hover: #2ea043;
+    --badge-muted-bg: rgba(139, 148, 158, 0.12);
+    --elastic-blue: #1BA9F5;
+    --badge-blue-bg: rgba(27, 169, 245, 0.13);
+    --badge-blue-border: rgba(27, 169, 245, 0.35);
+    --badge-gold-bg: rgba(255, 200, 61, 0.16);
+    --badge-gold-ring: rgba(255, 200, 61, 0.45);
+    --badge-gold-bg-strong: rgba(255, 200, 61, 0.20);
+    --badge-gold-ring-strong: rgba(255, 200, 61, 0.55);
+    --btn-primary-bg: var(--accent);
+    --btn-primary-hover: var(--accent-hover);
     --btn-primary-border: rgba(240, 246, 252, 0.1);
+    --shadow-card: 0 0 0 1px rgba(0, 0, 0, 0.2);
+    --shadow-card-hover: 0 2px 12px rgba(0, 0, 0, 0.3);
+    --shadow-header: 0 1px 0 rgba(0, 0, 0, 0.6);
   }
 
   * { margin: 0; padding: 0; box-sizing: border-box; }
 
   body {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif;
     background: var(--bg);
     color: var(--text);
     line-height: 1.5;
     min-height: 100vh;
+    display: flex;
+    flex-direction: column;
   }
 
-  .container {
-    max-width: 1020px;
+  a { color: var(--accent-deep); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+
+  /* ── Octicons ──────────────────────────────────────── */
+  .octicon {
+    display: inline-block;
+    fill: currentColor;
+    vertical-align: text-bottom;
+    flex-shrink: 0;
+  }
+
+  /* ── App header (sticky) ───────────────────────────── */
+  .app-header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    box-shadow: var(--shadow-header);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+
+  .app-header-inner {
+    max-width: 1100px;
     margin: 0 auto;
-    padding: 24px 16px;
-  }
-
-  header {
+    padding: 12px 24px;
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    margin-bottom: 24px;
-    flex-wrap: wrap;
-    gap: 12px;
+    gap: 16px;
   }
 
-  header h1 {
-    font-size: 20px;
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
     font-weight: 600;
-    display: flex;
-    align-items: center;
-    gap: 8px;
+    font-size: 15px;
+    color: var(--text);
+    text-decoration: none;
   }
 
-  header h1 svg { opacity: 0.7; }
+  .brand:hover { color: var(--accent-hover); text-decoration: none; }
+
+  .brand-mark {
+    color: var(--accent);
+    display: inline-flex;
+    align-items: center;
+  }
+
+  .brand-mark img {
+    display: block;
+    height: 36px;
+    width: auto;
+    filter: drop-shadow(0 1px 2px rgba(31, 35, 40, 0.15));
+  }
+
+  .header-spacer { flex: 1; }
 
   .header-actions {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 6px;
   }
 
+  .header-actions .status-text {
+    font-size: 12px;
+    color: var(--text-dim);
+    margin-right: 6px;
+    white-space: nowrap;
+  }
+
+  .icon-btn {
+    background: none;
+    border: 1px solid transparent;
+    color: var(--text-muted);
+    width: 30px;
+    height: 30px;
+    border-radius: 6px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.15s, color 0.15s, border-color 0.15s;
+    padding: 0;
+  }
+
+  .icon-btn:hover, .icon-btn.active {
+    background: var(--surface-hover);
+    color: var(--text);
+    border-color: var(--border);
+  }
+
+  .icon-btn.spinning .octicon { animation: spin 0.8s linear infinite; }
+
+  .avatar {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    border: 1px solid var(--border);
+    display: none;
+  }
+
+  /* ── Hero greeting ─────────────────────────────────── */
+  .hero {
+    text-align: center;
+    padding: 18px 16px 8px;
+    opacity: 0;
+    transform: translateY(-4px);
+    transition: opacity 0.4s ease, transform 0.4s ease;
+  }
+
+  .hero.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .hero-text {
+    font-family: Georgia, 'Times New Roman', serif;
+    font-size: 17px;
+    color: var(--text-muted);
+    letter-spacing: 0.1px;
+  }
+
+  .hero-text strong {
+    color: var(--text);
+    font-weight: 700;
+  }
+
+  .hero-text::before { content: '\2E3A  \2726  '; color: var(--gold); letter-spacing: 3px; }
+  .hero-text::after  { content: '  \2726  \2E3A'; color: var(--gold); letter-spacing: 3px; }
+
+  .hero-text .alert {
+    color: var(--gold-strong);
+    font-weight: 700;
+  }
+
+  /* ── Container ─────────────────────────────────────── */
+  .container {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 12px 24px 32px;
+    width: 100%;
+    flex: 1;
+  }
+
+  /* ── Buttons / inputs ──────────────────────────────── */
   button, input, select {
     font-family: inherit;
     font-size: 14px;
@@ -113,6 +268,7 @@
     padding: 6px 12px;
     border-radius: 6px;
     outline: none;
+    transition: border-color 0.15s, box-shadow 0.15s;
   }
 
   input:focus, select:focus {
@@ -124,13 +280,15 @@
     background: var(--surface);
     border: 1px solid var(--border);
     color: var(--text);
-    padding: 6px 14px;
+    padding: 5px 14px;
     border-radius: 6px;
     cursor: pointer;
     display: inline-flex;
     align-items: center;
     gap: 6px;
+    font-weight: 500;
     transition: background 0.15s, border-color 0.15s;
+    line-height: 20px;
   }
 
   .btn:hover { background: var(--surface-hover); border-color: var(--text-dim); }
@@ -142,55 +300,139 @@
     color: #fff;
   }
 
-  .btn-primary:hover { background: var(--btn-primary-hover); }
-  .btn-sm { padding: 4px 10px; font-size: 12px; }
+  .btn-primary:hover { background: var(--btn-primary-hover); color: #fff; }
+  .btn-sm { padding: 3px 10px; font-size: 12px; line-height: 18px; }
   .btn-danger { color: var(--red); }
   .btn-danger:hover { border-color: var(--red); }
 
-  .setup-card {
+  /* ── Setup screen (Box pattern) ────────────────────── */
+  .box {
     background: var(--surface);
     border: 1px solid var(--border);
     border-radius: var(--radius);
-    padding: 32px;
-    max-width: 520px;
-    margin: 60px auto;
+    overflow: hidden;
   }
 
-  .setup-card h2 { margin-bottom: 8px; font-size: 18px; }
-  .setup-card p { color: var(--text-muted); font-size: 14px; margin-bottom: 20px; }
+  .box-header {
+    padding: 14px 20px;
+    border-bottom: 1px solid var(--border-muted);
+    background: var(--surface-2);
+  }
 
-  .setup-card label {
+  .box-title {
+    font-size: 15px;
+    font-weight: 600;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .box-body { padding: 20px; }
+
+  .setup-card {
+    max-width: 520px;
+    margin: 80px auto;
+  }
+
+  .setup-card .lead {
+    color: var(--text-muted);
+    font-size: 14px;
+    margin-bottom: 18px;
+  }
+
+  .form-group { margin-bottom: 14px; }
+
+  .form-group label {
     display: block;
     font-size: 13px;
-    font-weight: 500;
+    font-weight: 600;
     margin-bottom: 4px;
-    color: var(--text-muted);
+    color: var(--text);
   }
 
-  .setup-card input {
-    width: 100%;
-    margin-bottom: 16px;
-  }
+  .form-group input { width: 100%; }
 
-  .setup-card .hint {
+  .form-group .hint {
     font-size: 12px;
     color: var(--text-dim);
-    margin-top: -12px;
-    margin-bottom: 16px;
+    margin-top: 6px;
+    line-height: 1.45;
   }
 
+  /* ── Top-level view tabs (UnderlineNav) ────────────── */
+  .view-tabs {
+    display: flex;
+    align-items: flex-end;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 16px;
+    padding-top: 6px;
+  }
+
+  .view-tab {
+    background: none;
+    border: none;
+    border-bottom: 2px solid transparent;
+    color: var(--text-muted);
+    padding: 10px 14px;
+    margin-bottom: -1px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    transition: color 0.15s, border-color 0.15s;
+    position: relative;
+  }
+
+  .view-tab:hover { color: var(--text); }
+
+  .view-tab.active {
+    color: var(--text);
+    border-bottom-color: var(--accent);
+    font-weight: 600;
+  }
+
+  .view-tab-count {
+    background: var(--surface-hover);
+    color: var(--text-muted);
+    padding: 1px 8px;
+    border-radius: 10px;
+    font-size: 11px;
+    font-weight: 500;
+    line-height: 16px;
+    border: 1px solid var(--border-muted);
+  }
+
+  .view-tab-count.has-attention {
+    background: rgba(232, 161, 0, 0.15);
+    color: var(--gold-strong);
+    border-color: rgba(232, 161, 0, 0.3);
+    font-weight: 600;
+  }
+
+  .view-tab-meta {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding-bottom: 8px;
+  }
+
+  /* ── Toolbar / filter tabs ─────────────────────────── */
   .toolbar {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin-bottom: 16px;
+    margin-bottom: 14px;
     flex-wrap: wrap;
     gap: 8px;
   }
 
   .filter-tabs {
     display: flex;
-    gap: 4px;
+    gap: 2px;
     background: var(--surface);
     border: 1px solid var(--border);
     border-radius: 6px;
@@ -201,61 +443,139 @@
     background: none;
     border: none;
     color: var(--text-muted);
-    padding: 5px 12px;
+    padding: 4px 12px;
     border-radius: 4px;
     cursor: pointer;
     font-size: 13px;
     font-weight: 500;
     transition: all 0.15s;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
   }
 
   .filter-tab:hover { color: var(--text); }
-  .filter-tab.active { background: var(--border); color: var(--text); }
+  .filter-tab.active {
+    background: var(--surface-hover);
+    color: var(--text);
+    box-shadow: var(--shadow-card);
+  }
 
   .filter-tab .count {
-    background: var(--border);
+    background: var(--surface-2);
+    border: 1px solid var(--border-muted);
     padding: 0 6px;
     border-radius: 10px;
-    margin-left: 4px;
-    font-size: 11px;
+    font-size: 10px;
+    line-height: 14px;
   }
 
-  .filter-tab.active .count { background: var(--text-dim); }
+  .filter-tab.active .count {
+    background: var(--surface);
+    color: var(--text-muted);
+  }
 
-  .status-text {
-    font-size: 13px;
+  .auto-refresh-toggle {
+    font-size: 12px;
     color: var(--text-dim);
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    cursor: pointer;
+    user-select: none;
   }
 
+  .auto-refresh-toggle input[type="checkbox"] {
+    width: auto;
+    padding: 0;
+    accent-color: var(--accent);
+  }
+
+  /* ── Teams info bar ────────────────────────────────── */
+  .teams-info {
+    font-size: 12px;
+    color: var(--text-dim);
+    padding: 6px 0 10px;
+    margin-bottom: 12px;
+    border-bottom: 1px dashed var(--border-muted);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+
+  .teams-info .team-badge.muted,
+  .teams-info .user-badge.muted {
+    opacity: 0.35;
+    text-decoration: line-through;
+  }
+
+  .teams-info .team-badge.muted:hover,
+  .teams-info .user-badge.muted:hover { opacity: 0.6; }
+
+  .teams-info .team-badge,
+  .teams-info .user-badge {
+    padding: 2px 9px;
+    border-radius: 10px;
+    font-size: 11px;
+    font-weight: 500;
+    cursor: pointer;
+    border: 1px solid transparent;
+    transition: all 0.15s;
+    user-select: none;
+  }
+
+  .teams-info .team-badge {
+    background: var(--badge-blue-bg);
+    color: var(--elastic-blue);
+    border-color: var(--badge-blue-border);
+  }
+  .teams-info .team-badge:hover { border-color: var(--elastic-blue); }
+  .teams-info .team-badge.active {
+    border-color: var(--elastic-blue);
+    box-shadow: 0 0 0 2px var(--badge-blue-bg);
+  }
+
+  .teams-info .user-badge {
+    background: var(--badge-accent-bg);
+    color: var(--accent);
+  }
+  .teams-info .user-badge:hover { border-color: var(--accent); }
+  .teams-info .user-badge.active {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px var(--badge-accent-bg);
+  }
+
+  /* ── PR list / repo group ──────────────────────────── */
   .pr-list { list-style: none; }
 
   .repo-group-header {
     font-size: 13px;
     font-weight: 600;
     color: var(--text-muted);
-    padding: 16px 4px 6px;
+    padding: 18px 4px 8px;
     display: flex;
     align-items: center;
     gap: 6px;
-    border-bottom: 1px solid var(--border);
+    border-bottom: 1px solid var(--border-muted);
     margin-bottom: 8px;
     cursor: pointer;
     user-select: none;
   }
 
-  .repo-group-header:first-child { padding-top: 0; }
+  .repo-group-header:first-child { padding-top: 4px; }
 
   .repo-group-header a {
-    color: var(--text-muted);
+    color: var(--text);
     text-decoration: none;
   }
 
-  .repo-group-header a:hover { color: var(--accent); }
+  .repo-group-header a:hover { color: var(--accent-hover); text-decoration: none; }
 
   .repo-group-header .collapse-arrow {
-    font-size: 10px;
-    transition: transform 0.15s;
     color: var(--text-dim);
+    transition: transform 0.15s;
+    display: inline-flex;
   }
 
   .repo-group-header .collapse-arrow.collapsed {
@@ -263,40 +583,54 @@
   }
 
   .repo-group-header .repo-count {
-    background: var(--border);
-    padding: 0 6px;
+    background: var(--surface-hover);
+    border: 1px solid var(--border-muted);
+    padding: 0 7px;
     border-radius: 10px;
     font-size: 11px;
     font-weight: 500;
+    color: var(--text-muted);
   }
 
+  /* ── PR card ───────────────────────────────────────── */
   .pr-card {
     background: var(--surface);
     border: 1px solid var(--border);
     border-radius: var(--radius);
-    padding: 16px 20px;
+    padding: 14px 18px;
     margin-bottom: 8px;
-    transition: border-color 0.15s;
+    transition: border-color 0.15s, box-shadow 0.15s;
     display: grid;
     grid-template-columns: 1fr auto;
-    gap: 12px;
+    gap: 14px;
     align-items: start;
     border-left: 3px solid var(--border);
+    position: relative;
+    box-shadow: var(--shadow-card);
   }
 
-  .pr-card:hover { border-color: var(--text-dim); }
+  .pr-card:hover {
+    border-color: var(--text-dim);
+    box-shadow: var(--shadow-card-hover);
+  }
 
-  .pr-card.commented { border-left-color: var(--accent); }
-  .pr-card.changes { border-left-color: var(--red); }
+  .pr-card.commented { border-left-color: var(--accent-deep); }
+  .pr-card.changes {
+    border-left-color: var(--red);
+    border-left-width: 4px;
+    padding-left: 17px; /* compensate +1px so content stays aligned */
+  }
   .pr-card.dismissed { border-left-color: var(--text-muted); }
+  .pr-card.needs-attention {
+    border-left-color: var(--gold-strong);
+    border-left-width: 4px;
+    padding-left: 17px;
+  }
 
   .pr-body { min-width: 0; }
 
   .pr-title-row {
-    display: flex;
-    align-items: baseline;
-    gap: 8px;
-    flex-wrap: wrap;
+    display: block;
   }
 
   .pr-title {
@@ -307,13 +641,14 @@
     line-height: 1.4;
   }
 
-  .pr-title:hover { color: var(--accent); }
+  .pr-title:hover { color: var(--accent-hover); text-decoration: none; }
 
   .pr-number {
     color: var(--text-dim);
-    font-size: 14px;
+    font-size: 12px;
     font-weight: 400;
     white-space: nowrap;
+    margin-right: 6px;
   }
 
   .pr-meta {
@@ -331,7 +666,7 @@
     text-decoration: none;
   }
 
-  .pr-meta a:hover { color: var(--accent); }
+  .pr-meta a:hover { color: var(--accent-hover); text-decoration: none; }
 
   .pr-labels {
     display: flex;
@@ -343,70 +678,75 @@
   .pr-label {
     font-size: 11px;
     font-weight: 500;
-    padding: 1px 8px;
-    border-radius: 12px;
-    border: 1px solid transparent;
+    padding: 0 7px;
+    border-radius: 10px;
     white-space: nowrap;
+    line-height: 18px;
+    background: var(--surface-hover);
+    color: var(--text-muted);
+    border: 1px solid var(--border-muted);
   }
 
   .pr-right {
     text-align: right;
     flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 4px;
   }
 
   .pr-review-status {
     font-size: 11px;
     font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    padding: 2px 8px;
-    border-radius: 4px;
+    padding: 2px 9px;
+    border-radius: 10px;
     white-space: nowrap;
+    line-height: 18px;
   }
 
-  .pr-review-status.pending { background: var(--badge-yellow-bg); color: var(--yellow); }
-  .pr-review-status.commented { background: var(--badge-accent-bg); color: var(--accent); }
-  .pr-review-status.changes { background: var(--badge-red-bg); color: var(--red); }
+  .pr-review-status.pending { background: var(--badge-muted-bg); color: var(--text-muted); }
+  .pr-review-status.commented { background: rgba(0, 119, 204, 0.10); color: var(--accent-deep); }
+  .pr-review-status.changes {
+    background: var(--badge-red-strong-bg);
+    color: var(--red);
+    box-shadow: inset 0 0 0 1px var(--badge-red-ring);
+  }
   .pr-review-status.dismissed { background: var(--badge-muted-bg); color: var(--text-muted); }
 
   .pr-updated {
     font-size: 11px;
     color: var(--text-dim);
-    margin-top: 4px;
     white-space: nowrap;
   }
 
-
   .pr-dismiss {
-    background: none;
-    border: none;
+    background: var(--surface);
+    border: 1px solid var(--border-muted);
     color: var(--text-dim);
     cursor: pointer;
-    font-size: 14px;
-    padding: 2px 4px;
-    border-radius: 4px;
+    padding: 2px;
+    border-radius: 6px;
     opacity: 0;
-    transition: opacity 0.15s, color 0.15s;
+    transition: opacity 0.15s, color 0.15s, border-color 0.15s;
     position: absolute;
     top: 8px;
     right: 8px;
-    line-height: 1;
+    line-height: 0;
+    width: 22px;
+    height: 22px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
   }
-
-  .pr-card { position: relative; }
 
   .pr-card:hover .pr-dismiss { opacity: 1; }
-  .pr-dismiss:hover { color: var(--text); }
+  .pr-dismiss:hover { color: var(--text); border-color: var(--text-dim); }
 
-  .pr-card.dismissed-card {
-    opacity: 0.45;
-  }
+  .pr-card.dismissed-card { opacity: 0.5; }
+  .pr-card.dismissed-card:hover { opacity: 0.8; }
 
-  .pr-card.dismissed-card:hover { opacity: 0.7; }
-
-  .dismissed-section {
-    margin-top: 24px;
-  }
+  .dismissed-section { margin-top: 24px; }
 
   .dismissed-toggle {
     background: none;
@@ -423,15 +763,15 @@
   .dismissed-toggle:hover { color: var(--text-muted); }
 
   .dismissed-toggle .arrow {
-    display: inline-block;
+    display: inline-flex;
     transition: transform 0.15s;
-    font-size: 10px;
   }
 
   .dismissed-toggle .arrow.open {
     transform: rotate(90deg);
   }
 
+  /* ── Loading / empty / error ───────────────────────── */
   .loading {
     text-align: center;
     padding: 60px 20px;
@@ -446,8 +786,8 @@
 
   .spinner {
     display: inline-block;
-    width: 24px;
-    height: 24px;
+    width: 28px;
+    height: 28px;
     border: 3px solid var(--border);
     border-top-color: var(--accent);
     border-radius: 50%;
@@ -457,109 +797,53 @@
 
   @keyframes spin { to { transform: rotate(360deg); } }
 
-  .empty-state {
+  .blankslate {
     text-align: center;
-    padding: 60px 20px;
-    color: var(--text-muted);
+    padding: 56px 24px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
   }
 
-  .empty-state .emoji { font-size: 32px; margin-bottom: 8px; }
+  .blankslate-octicon {
+    color: var(--text-dim);
+    margin-bottom: 12px;
+  }
+
+  .blankslate h3 {
+    font-size: 16px;
+    color: var(--text);
+    margin-bottom: 6px;
+    font-family: Georgia, 'Times New Roman', serif;
+    font-weight: 600;
+  }
+
+  .blankslate p {
+    color: var(--text-muted);
+    max-width: 380px;
+    margin: 0 auto;
+    font-size: 13px;
+  }
 
   .error-msg {
     background: var(--badge-red-bg);
     border: 1px solid var(--red);
     color: var(--red);
-    padding: 12px 16px;
+    padding: 10px 14px;
     border-radius: var(--radius);
-    font-size: 14px;
-    margin-bottom: 16px;
-  }
-
-  .auto-refresh-toggle {
-    font-size: 12px;
-    color: var(--text-dim);
-    display: flex;
-    align-items: center;
-    gap: 4px;
-  }
-
-  .auto-refresh-toggle input[type="checkbox"] {
-    width: auto;
-    padding: 0;
-  }
-
-  .teams-info {
-    font-size: 12px;
-    color: var(--text-dim);
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    padding: 8px 12px;
+    font-size: 13px;
     margin-bottom: 16px;
     display: flex;
     align-items: center;
-    gap: 6px;
-    flex-wrap: wrap;
+    gap: 8px;
   }
 
-  .teams-info .team-badge.muted,
-  .teams-info .user-badge.muted {
-    opacity: 0.35;
-    text-decoration: line-through;
-  }
-
-  .teams-info .team-badge.muted:hover,
-  .teams-info .user-badge.muted:hover {
-    opacity: 0.6;
-  }
-
-  .teams-info .team-badge,
-  .teams-info .user-badge {
-    padding: 2px 8px;
-    border-radius: 10px;
-    font-size: 11px;
-    font-weight: 500;
-    cursor: pointer;
-    border: 1px solid transparent;
-    transition: all 0.15s;
-    user-select: none;
-  }
-
-  .teams-info .team-badge {
-    background: var(--badge-purple-bg);
-    color: var(--purple);
-  }
-
-  .teams-info .team-badge:hover {
-    opacity: 0.8;
-    border-color: var(--purple);
-  }
-
-  .teams-info .team-badge.active {
-    border-color: var(--purple);
-    box-shadow: 0 0 0 2px var(--badge-purple-bg);
-  }
-
-  .teams-info .user-badge {
-    background: var(--badge-accent-bg);
-    color: var(--accent);
-  }
-
-  .teams-info .user-badge:hover {
-    opacity: 0.8;
-    border-color: var(--accent);
-  }
-
-  .teams-info .user-badge.active {
-    border-color: var(--accent);
-    box-shadow: 0 0 0 2px var(--badge-accent-bg);
-  }
-
+  /* ── Reviewer / via badges ─────────────────────────── */
   .pr-requested-via {
     display: flex;
     gap: 4px;
     flex-wrap: wrap;
-    margin-top: 5px;
+    margin-top: 6px;
   }
 
   .pr-via-badge {
@@ -571,13 +855,15 @@
   }
 
   .pr-via-badge.via-direct {
-    background: var(--badge-accent-bg);
-    color: var(--accent);
+    background: var(--surface-hover);
+    color: var(--text-dim);
+    border: 1px solid var(--border-muted);
   }
 
   .pr-via-badge.via-team {
-    background: var(--badge-purple-bg);
-    color: var(--purple);
+    background: var(--surface-hover);
+    color: var(--text-dim);
+    border: 1px solid var(--border-muted);
   }
 
   .pr-reviewers {
@@ -597,105 +883,137 @@
   .pr-reviewer {
     display: inline-flex;
     align-items: center;
-    gap: 3px;
+    gap: 4px;
     font-size: 11px;
-    padding: 1px 7px;
+    padding: 1px 8px;
+    border-radius: 10px;
+    white-space: nowrap;
+    border: 1px solid transparent;
+  }
+
+  .pr-reviewer.rv-approved { background: var(--badge-green-bg); color: var(--green); opacity: 0.7; }
+  .pr-reviewer.rv-changes { background: var(--badge-red-bg); color: var(--red); }
+  .pr-reviewer.rv-commented { background: var(--badge-muted-bg); color: var(--text-muted); }
+  .pr-reviewer.rv-pending { background: transparent; color: var(--text-dim); border-color: var(--border-muted); }
+  .pr-reviewer.rv-me { background: var(--badge-accent-bg); color: var(--accent); border-color: rgba(0,191,179,0.3); font-weight: 600; }
+  .pr-reviewer.rv-required {
+    background: var(--badge-gold-bg);
+    color: var(--gold-strong);
+    border-color: var(--badge-gold-ring);
+  }
+  .pr-reviewer.rv-required-other {
+    background: transparent;
+    color: var(--text-muted);
+    border-color: var(--border-muted);
+  }
+
+  .rv-icon {
+    display: inline-flex;
+    align-items: center;
+    line-height: 0;
+  }
+
+  .pr-attention {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--gold-strong);
+    margin-top: 6px;
+    padding: 2px 8px;
+    border-radius: 10px;
+    background: var(--badge-gold-bg);
+    border: 1px solid var(--badge-gold-ring);
+    white-space: nowrap;
+  }
+
+  /* ── CI status ─────────────────────────────────────── */
+  .pr-ci-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 2px 9px;
     border-radius: 10px;
     white-space: nowrap;
   }
 
-  .pr-reviewer.rv-approved {
-    background: var(--badge-green-bg);
-    color: var(--green);
-  }
-
-  .pr-reviewer.rv-changes {
-    background: var(--badge-red-bg);
+  .pr-ci-badge.ci-success { background: var(--badge-green-bg); color: var(--green); opacity: 0.75; }
+  .pr-ci-badge.ci-failure {
+    background: var(--badge-red-strong-bg);
     color: var(--red);
+    box-shadow: inset 0 0 0 1px var(--badge-red-ring);
   }
+  .pr-ci-badge.ci-pending { background: var(--badge-yellow-bg); color: var(--yellow); }
 
-  .pr-reviewer.rv-commented {
-    background: var(--badge-muted-bg);
-    color: var(--text-muted);
-  }
-
-  .pr-reviewer.rv-pending {
-    background: var(--badge-muted-bg);
-    color: var(--text-dim);
-  }
-
-  .rv-icon {
-    font-size: 10px;
-    line-height: 1;
-  }
-
-  .progress-bar {
-    width: 200px;
-    height: 4px;
-    background: var(--border);
-    border-radius: 2px;
-    overflow: hidden;
-    margin: 12px auto;
-  }
-
-  .progress-bar-fill {
-    height: 100%;
-    background: var(--accent);
-    border-radius: 2px;
-    transition: width 0.3s;
-  }
-
-  .theme-toggle {
-    background: none;
-    border: 1px solid var(--border);
-    color: var(--text-muted);
-    width: 28px;
-    height: 28px;
-    border-radius: 6px;
-    cursor: pointer;
-    display: flex;
+  .pr-ci-inline {
+    display: inline-flex;
     align-items: center;
-    justify-content: center;
-    font-size: 14px;
-    transition: all 0.15s;
-    padding: 0;
+    gap: 4px;
+    font-size: 12px;
+    font-weight: 500;
   }
+  .pr-ci-inline.ci-success { color: var(--green); opacity: 0.75; }
+  .pr-ci-inline.ci-failure { color: var(--red); font-weight: 600; }
+  .pr-ci-inline.ci-pending { color: var(--yellow); }
 
-  .theme-toggle:hover {
-    color: var(--text);
-    border-color: var(--text-dim);
-  }
-
-  @media (max-width: 640px) {
-    .pr-card { grid-template-columns: 1fr; gap: 8px; }
-    .pr-right { text-align: left; display: flex; gap: 8px; align-items: center; }
-  }
-
-  /* ── Settings panel ────────────────────────────────── */
-  .settings-btn {
-    background: none;
-    border: 1px solid var(--border);
-    color: var(--text-muted);
-    width: 28px;
-    height: 28px;
-    border-radius: 6px;
-    cursor: pointer;
-    display: flex;
+  .pr-review-decision {
+    display: inline-flex;
     align-items: center;
-    justify-content: center;
-    font-size: 15px;
-    transition: all 0.15s;
-    padding: 0;
+    gap: 4px;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 2px 9px;
+    border-radius: 10px;
+    white-space: nowrap;
   }
 
-  .settings-btn:hover, .settings-btn.active { background: var(--surface-hover); color: var(--text); border-color: var(--text-dim); }
+  .pr-review-decision.rd-approved { background: var(--badge-green-bg); color: var(--green); opacity: 0.75; }
+  .pr-review-decision.rd-changes { background: var(--badge-red-bg); color: var(--red); }
+  .pr-review-decision.rd-required { background: var(--badge-muted-bg); color: var(--text-muted); }
 
-  .settings-panel {
+  /* ── Settings dialog ───────────────────────────────── */
+  dialog.settings-dialog {
+    border: none;
+    border-radius: 12px;
+    padding: 0;
+    max-width: 560px;
+    width: 90vw;
     background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 16px 20px;
-    margin-bottom: 16px;
+    color: var(--text);
+    box-shadow: 0 16px 64px rgba(0, 0, 0, 0.25);
+  }
+
+  dialog.settings-dialog::backdrop {
+    background: rgba(31, 35, 40, 0.5);
+    backdrop-filter: blur(2px);
+  }
+
+  .dialog-header {
+    padding: 14px 20px;
+    border-bottom: 1px solid var(--border-muted);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .dialog-title {
+    font-size: 15px;
+    font-weight: 600;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .dialog-body { padding: 18px 20px 22px; }
+
+  .settings-section + .settings-section {
+    margin-top: 18px;
+    padding-top: 18px;
+    border-top: 1px solid var(--border-muted);
   }
 
   .settings-section-title {
@@ -711,6 +1029,7 @@
     font-size: 12px;
     color: var(--text-dim);
     margin-bottom: 10px;
+    line-height: 1.45;
   }
 
   .settings-bot-row {
@@ -724,11 +1043,11 @@
     display: inline-flex;
     align-items: center;
     gap: 3px;
-    background: var(--badge-muted-bg);
+    background: var(--surface-2);
     color: var(--text-muted);
     border: 1px solid var(--border);
     border-radius: 10px;
-    padding: 1px 4px 1px 8px;
+    padding: 1px 4px 1px 9px;
     font-size: 11px;
     font-weight: 500;
   }
@@ -738,10 +1057,11 @@
     border: none;
     color: var(--text-dim);
     cursor: pointer;
-    font-size: 12px;
-    padding: 0 2px;
-    line-height: 1;
+    padding: 2px 4px;
+    line-height: 0;
     border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
   }
 
   .bot-chip-remove:hover { color: var(--red); }
@@ -753,11 +1073,11 @@
   }
 
   .bot-filter-add input {
-    padding: 2px 7px;
+    padding: 2px 8px;
     font-size: 11px;
     border-radius: 10px;
     height: auto;
-    width: 140px;
+    width: 150px;
   }
 
   .bot-filter-add button {
@@ -765,155 +1085,111 @@
     border: 1px solid var(--border);
     color: var(--text-muted);
     border-radius: 10px;
-    padding: 1px 8px;
+    padding: 1px 9px;
     font-size: 11px;
     cursor: pointer;
   }
 
   .bot-filter-add button:hover { color: var(--text); border-color: var(--text-dim); }
 
-  /* ── Required reviewer chip ─────────────────────────── */
-  .pr-reviewer.rv-required {
-    background: var(--badge-yellow-bg);
-    color: var(--yellow);
-    border: 1px solid transparent;
+  /* ── Footer ────────────────────────────────────────── */
+  .app-footer {
+    text-align: center;
+    padding: 24px 16px 28px;
+    font-size: 12px;
+    color: var(--text-dim);
+    border-top: 1px solid var(--border-muted);
+    margin-top: 28px;
+    font-family: Georgia, 'Times New Roman', serif;
+    font-style: italic;
   }
 
-  /* ── Top-level view tabs ───────────────────────────── */
-  .view-tabs {
-    display: flex;
-    gap: 0;
-    border-bottom: 1px solid var(--border);
-    margin-bottom: 20px;
-  }
-
-  .view-tab {
-    background: none;
-    border: none;
-    border-bottom: 2px solid transparent;
+  .app-footer a {
     color: var(--text-muted);
-    padding: 8px 16px;
-    margin-bottom: -1px;
-    cursor: pointer;
-    font-size: 14px;
-    font-weight: 500;
-    display: inline-flex;
-    align-items: center;
-    gap: 7px;
-    transition: color 0.15s, border-color 0.15s;
+    text-decoration: none;
   }
 
-  .view-tab:hover { color: var(--text); }
+  .app-footer a:hover { color: var(--accent-hover); text-decoration: underline; }
 
-  .view-tab.active {
-    color: var(--text);
-    border-bottom-color: var(--accent);
+  .footer-mark {
+    color: var(--gold);
+    margin: 0 4px;
   }
 
-  .view-tab-count {
-    background: var(--border);
-    color: var(--text-muted);
-    padding: 0 7px;
-    border-radius: 10px;
-    font-size: 11px;
-    font-weight: 500;
+  /* ── Responsive ────────────────────────────────────── */
+  @media (max-width: 720px) {
+    .app-header-inner { padding: 10px 14px; }
+    .container { padding: 12px 14px 24px; }
+    .pr-card { grid-template-columns: 1fr; gap: 10px; }
+    .pr-right { text-align: left; flex-direction: row; align-items: center; flex-wrap: wrap; }
+    .view-tab-meta { width: 100%; padding-top: 6px; padding-bottom: 4px; }
+    .hero-text { font-size: 15px; }
+    .brand span.brand-title { display: none; }
   }
-
-  .view-tab-count.has-attention {
-    background: rgba(188, 76, 0, 0.15);
-    color: var(--orange);
-  }
-
-  .pr-card.needs-attention { border-left-color: var(--orange); }
-
-  .pr-attention {
-    font-size: 11px;
-    font-weight: 500;
-    color: var(--orange);
-    margin-top: 5px;
-    white-space: nowrap;
-  }
-
-  .pr-ci-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 3px;
-    font-size: 10px;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.4px;
-    padding: 2px 7px;
-    border-radius: 4px;
-    white-space: nowrap;
-  }
-
-  .pr-ci-badge.ci-success { background: var(--badge-green-bg); color: var(--green); }
-  .pr-ci-badge.ci-failure { background: var(--badge-red-bg); color: var(--red); }
-  .pr-ci-badge.ci-pending { background: var(--badge-yellow-bg); color: var(--yellow); }
-
-  .pr-ci-inline { font-size: 12px; font-weight: 500; }
-  .pr-ci-inline.ci-success { color: var(--green); }
-  .pr-ci-inline.ci-failure { color: var(--red); }
-  .pr-ci-inline.ci-pending { color: var(--yellow); }
-
-  .pr-review-decision {
-    display: inline-flex;
-    align-items: center;
-    gap: 3px;
-    font-size: 11px;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    padding: 2px 8px;
-    border-radius: 4px;
-    white-space: nowrap;
-  }
-
-  .pr-review-decision.rd-approved { background: var(--badge-green-bg); color: var(--green); }
-  .pr-review-decision.rd-changes { background: var(--badge-red-bg); color: var(--red); }
-  .pr-review-decision.rd-required { background: var(--badge-yellow-bg); color: var(--yellow); }
 </style>
 </head>
 <body>
 
+<!-- App header (visible only on dashboard) -->
+<header class="app-header" id="app-header" style="display:none;">
+  <div class="app-header-inner">
+    <a class="brand" href="#" onclick="event.preventDefault();">
+      <span class="brand-mark" id="brand-mark"></span>
+      <span class="brand-title">PR Review Dashboard</span>
+    </a>
+    <div class="header-spacer"></div>
+    <div class="header-actions">
+      <span class="status-text" id="status-text"></span>
+      <button class="icon-btn" id="refresh-btn" onclick="fetchPRs()" title="Refresh" aria-label="Refresh"></button>
+      <button class="icon-btn" id="theme-toggle" onclick="toggleTheme()" title="Toggle theme" aria-label="Toggle theme"></button>
+      <button class="icon-btn" id="settings-btn" onclick="openSettings()" title="Settings" aria-label="Settings"></button>
+      <img class="avatar" id="user-avatar" alt="" />
+      <button class="icon-btn" id="logout-btn" onclick="logout()" title="Sign out" aria-label="Sign out"></button>
+    </div>
+  </div>
+</header>
+
+<!-- Hero greeting (visible only on dashboard) -->
+<div class="hero" id="hero" aria-hidden="true">
+  <div class="hero-text" id="hero-text"></div>
+</div>
+
 <div class="container" id="app">
   <!-- Setup screen -->
   <div class="setup-card" id="setup-screen">
-    <h2>PR Review Dashboard</h2>
-    <p>Track pull requests you need to review across all repositories, including team-based review requests.</p>
+    <div class="box">
+      <div class="box-header">
+        <h2 class="box-title">
+          <span id="setup-mark"></span>
+          PR Review Dashboard
+        </h2>
+      </div>
+      <div class="box-body">
+        <p class="lead">Track pull requests you need to review across all repositories, including team-based review requests.</p>
 
-    <label for="token-input">GitHub Personal Access Token</label>
-    <input type="password" id="token-input" placeholder="ghp_...">
-    <p class="hint">
-      Use a <a href="https://github.com/settings/tokens/new?scopes=repo,read:org&description=PR+Review+Dashboard" target="_blank" style="color:var(--accent);">classic token</a> with <code>repo</code> and <code>read:org</code> scopes, then <a href="https://github.com/settings/tokens" target="_blank" style="color:var(--accent);">configure SSO</a> for it so it can read your organization's repositories.
-      Your token is stored only in your browser and sent directly to the GitHub API.
-    </p>
+        <div class="form-group">
+          <label for="token-input">GitHub Personal Access Token</label>
+          <input type="password" id="token-input" placeholder="ghp_...">
+          <p class="hint">
+            Use a <a href="https://github.com/settings/tokens/new?scopes=repo,read:org&description=PR+Review+Dashboard" target="_blank">classic token</a> with <code>repo</code> and <code>read:org</code> scopes, then <a href="https://github.com/settings/tokens" target="_blank">configure SSO</a> for it so it can read your organization's repositories.
+            Your token is stored only in your browser and sent directly to the GitHub API.
+          </p>
+        </div>
 
-    <label for="user-input-setup">GitHub username (optional, auto-detected)</label>
-    <input type="text" id="user-input-setup" placeholder="auto-detect">
+        <div class="form-group">
+          <label for="user-input-setup">GitHub username <span style="color:var(--text-dim);font-weight:400;">(optional, auto-detected)</span></label>
+          <input type="text" id="user-input-setup" placeholder="auto-detect">
+        </div>
 
-    <br><br>
-    <button class="btn btn-primary" onclick="saveSetup()">Get started</button>
+        <button class="btn btn-primary" onclick="saveSetup()">Get started</button>
+      </div>
+    </div>
   </div>
 
   <!-- Dashboard -->
   <div id="dashboard-screen" style="display:none;">
-    <header>
-      <h1>
-        <svg width="20" height="20" viewBox="0 0 16 16" fill="currentColor"><path d="M7.177 3.073L9.573.677A.25.25 0 0110 .854v4.792a.25.25 0 01-.427.177L7.177 3.427a.25.25 0 010-.354zM3.75 2.5a.75.75 0 100 1.5.75.75 0 000-1.5zm-2.25.75a2.25 2.25 0 113 2.122v5.256a2.251 2.251 0 11-1.5 0V5.372A2.25 2.25 0 011.5 3.25zM11 2.5h-1V4h1a1 1 0 011 1v5.628a2.251 2.251 0 101.5 0V5A2.5 2.5 0 0011 2.5zm1 10.25a.75.75 0 111.5 0 .75.75 0 01-1.5 0zM3.75 12a.75.75 0 100 1.5.75.75 0 000-1.5z"/></svg>
-        PR Review Dashboard
-      </h1>
-      <div class="header-actions">
-        <button class="btn btn-sm" id="refresh-btn" onclick="fetchPRs()">Refresh</button>
-        <button class="settings-btn" id="settings-btn" onclick="toggleSettings()" title="Settings">&#x2699;</button>
-        <button class="theme-toggle" id="theme-toggle" onclick="toggleTheme()" title="Toggle light/dark theme"></button>
-        <button class="btn btn-sm btn-danger" onclick="logout()" title="Reset token & sign out">Sign out</button>
-      </div>
-    </header>
-
-    <div id="settings-panel" class="settings-panel" style="display:none;"></div>
-    <div id="teams-container"></div>
     <div id="error-container"></div>
+    <div id="teams-container"></div>
 
     <div class="view-tabs">
       <button class="view-tab active" id="view-tab-review" onclick="switchView('review')">
@@ -924,7 +1200,7 @@
         My PRs
         <span class="view-tab-count" id="vcount-my-prs">0</span>
       </button>
-      <div style="margin-left:auto; display:flex; align-items:center; gap:12px; padding-bottom:2px;">
+      <div class="view-tab-meta">
         <label class="auto-refresh-toggle">
           <input type="checkbox" id="show-drafts" checked onchange="onShowDraftsChange()">
           Show drafts
@@ -933,7 +1209,6 @@
           <input type="checkbox" id="auto-refresh" checked>
           Auto-refresh (5 min)
         </label>
-        <span class="status-text" id="status-text"></span>
       </div>
     </div>
 
@@ -958,8 +1233,26 @@
   </div>
 </div>
 
+<!-- Settings dialog -->
+<dialog class="settings-dialog" id="settings-dialog">
+  <div class="dialog-header">
+    <h3 class="dialog-title">
+      <span id="settings-dialog-mark"></span>
+      Settings
+    </h3>
+    <button class="icon-btn" onclick="closeSettings()" aria-label="Close" id="settings-close-btn"></button>
+  </div>
+  <div class="dialog-body" id="settings-dialog-body"></div>
+</dialog>
+
+<footer class="app-footer">
+  Crafted with hope by <a href="https://github.com/florent-leborgne" target="_blank" rel="noopener">Florent LB</a>
+  <span class="footer-mark">&#x2726;</span>
+  MIT License
+</footer>
+
 <script>
-const STORAGE_KEYS = { token: 'prd_token', user: 'prd_user', teams: 'prd_teams', theme: 'prd_theme', dismissed: 'prd_dismissed', collapsedRepos: 'prd_collapsed_repos', mutedTeams: 'prd_muted_teams', botLogins: 'prd_bot_logins' };
+const STORAGE_KEYS = { token: 'prd_token', user: 'prd_user', teams: 'prd_teams', theme: 'prd_theme', dismissed: 'prd_dismissed', collapsedRepos: 'prd_collapsed_repos', mutedTeams: 'prd_muted_teams', botLogins: 'prd_bot_logins', showDrafts: 'prd_show_drafts', view: 'prd_view' };
 const DEFAULT_BOT_LOGINS = ['elasticmachine', 'macroscopeapp'];
 let allPRs = [];
 let currentFilter = 'all';
@@ -967,6 +1260,42 @@ let currentRequestedViaFilter = null; // null = all, 'direct' = only direct, 'or
 let dismissedShowExpanded = false;
 let myOwnPRs = [];
 let currentView = 'review';
+
+/* ── Octicons (GitHub's Primer SVG paths) ─────────────── */
+const OCTICONS = {
+  // Branding / status
+  'git-pull-request': 'M1.5 3.25a2.25 2.25 0 1 1 3 2.122v5.256a2.251 2.251 0 1 1-1.5 0V5.372A2.25 2.25 0 0 1 1.5 3.25Zm5.677-.177L9.573.677A.25.25 0 0 1 10 .854V2.5h1A2.5 2.5 0 0 1 13.5 5v5.628a2.251 2.251 0 1 1-1.5 0V5a1 1 0 0 0-1-1h-1v1.646a.25.25 0 0 1-.427.177L7.177 3.427a.25.25 0 0 1 0-.354ZM3.75 2.5a.75.75 0 1 0 0 1.5.75.75 0 0 0 0-1.5Zm0 9.5a.75.75 0 1 0 0 1.5.75.75 0 0 0 0-1.5Zm8.25.75a.75.75 0 1 0 1.5 0 .75.75 0 0 0-1.5 0Z',
+  // Header actions
+  gear: 'M8 0a8.2 8.2 0 0 1 .701.031C9.444.095 9.99.645 10.16 1.29l.288 1.107c.018.066.079.158.212.224.231.114.454.243.668.386.123.082.233.09.299.071l1.103-.303c.644-.176 1.392.021 1.82.63.27.385.506.792.704 1.218.315.675.111 1.422-.364 1.891l-.814.806c-.049.048-.098.147-.088.294a6.1 6.1 0 0 1 0 .772c-.01.147.04.246.088.294l.814.806c.475.469.679 1.216.364 1.891a7.977 7.977 0 0 1-.704 1.217c-.428.61-1.176.807-1.82.63l-1.103-.303c-.066-.019-.176-.011-.299.071a5.991 5.991 0 0 1-.668.386c-.133.066-.194.158-.212.224l-.288 1.107c-.17.645-.716 1.195-1.459 1.26a8.006 8.006 0 0 1-1.402 0c-.743-.065-1.289-.615-1.459-1.26l-.289-1.107c-.017-.066-.078-.158-.211-.224a5.99 5.99 0 0 1-.668-.386c-.123-.082-.233-.09-.3-.071l-1.102.303c-.644.177-1.392-.02-1.82-.63a7.968 7.968 0 0 1-.704-1.217c-.315-.675-.111-1.422.363-1.891l.815-.806c.049-.048.098-.147.088-.294a6.1 6.1 0 0 1 0-.772c.01-.147-.04-.246-.088-.294l-.815-.806C.635 6.045.431 5.298.746 4.623a7.92 7.92 0 0 1 .704-1.217c.428-.61 1.176-.807 1.82-.63l1.103.303c.066.019.176.011.299-.071.214-.143.437-.272.668-.386.133-.066.194-.158.212-.224L5.84 1.29c.17-.645.716-1.195 1.459-1.26A8.2 8.2 0 0 1 8 0ZM8 5a3 3 0 1 0 0 6 3 3 0 0 0 0-6Z',
+  sync: 'M1.705 8.005a.75.75 0 0 1 .834.656 5.5 5.5 0 0 0 9.592 2.97l-1.204-1.204a.25.25 0 0 1 .177-.427h3.646a.25.25 0 0 1 .25.25v3.646a.25.25 0 0 1-.427.177l-1.38-1.38A7 7 0 0 1 1.05 8.84a.75.75 0 0 1 .656-.834ZM8 2.5a5.487 5.487 0 0 0-4.131 1.869l1.204 1.204A.25.25 0 0 1 4.896 6H1.25A.25.25 0 0 1 1 5.75V2.104a.25.25 0 0 1 .427-.177l1.38 1.38A7 7 0 0 1 14.95 7.16a.75.75 0 0 1-1.49.178A5.5 5.5 0 0 0 8 2.5Z',
+  sun: 'M8 12a4 4 0 1 1 0-8 4 4 0 0 1 0 8Zm0-1.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5ZM8 0a.75.75 0 0 1 .75.75v1.5a.75.75 0 0 1-1.5 0V.75A.75.75 0 0 1 8 0Zm0 13a.75.75 0 0 1 .75.75v1.5a.75.75 0 0 1-1.5 0v-1.5A.75.75 0 0 1 8 13ZM2.343 2.343a.75.75 0 0 1 1.061 0l1.06 1.061a.75.75 0 0 1-1.06 1.06l-1.06-1.06a.75.75 0 0 1 0-1.06Zm9.193 9.193a.75.75 0 0 1 1.06 0l1.061 1.06a.75.75 0 0 1-1.06 1.061l-1.061-1.06a.75.75 0 0 1 0-1.061ZM16 8a.75.75 0 0 1-.75.75h-1.5a.75.75 0 0 1 0-1.5h1.5A.75.75 0 0 1 16 8ZM3 8a.75.75 0 0 1-.75.75H.75a.75.75 0 0 1 0-1.5h1.5A.75.75 0 0 1 3 8Zm10.657-5.657a.75.75 0 0 1 0 1.061l-1.061 1.06a.75.75 0 1 1-1.06-1.06l1.06-1.06a.75.75 0 0 1 1.061 0Zm-9.193 9.193a.75.75 0 0 1 0 1.06l-1.06 1.061a.75.75 0 1 1-1.061-1.06l1.06-1.061a.75.75 0 0 1 1.061 0Z',
+  moon: 'M9.598 1.591a.75.75 0 0 1 .785-.175 7 7 0 1 1-8.967 8.967.75.75 0 0 1 .961-.96 5.5 5.5 0 0 0 7.046-7.046.75.75 0 0 1 .175-.786Zm1.616 1.945a7 7 0 0 1-7.678 7.678 5.499 5.499 0 1 0 7.678-7.678Z',
+  'sign-out': 'M2 2.75C2 1.784 2.784 1 3.75 1h2.5a.75.75 0 0 1 0 1.5h-2.5a.25.25 0 0 0-.25.25v10.5c0 .138.112.25.25.25h2.5a.75.75 0 0 1 0 1.5h-2.5A1.75 1.75 0 0 1 2 13.25Zm10.44 4.5-1.97-1.97a.749.749 0 0 1 .326-1.275.749.749 0 0 1 .734.215l3.25 3.25a.75.75 0 0 1 0 1.06l-3.25 3.25a.749.749 0 0 1-1.275-.326.749.749 0 0 1 .215-.734l1.97-1.97H6.75a.75.75 0 0 1 0-1.5Z',
+  // Card / state icons
+  check: 'M13.78 4.22a.75.75 0 0 1 0 1.06l-7.25 7.25a.75.75 0 0 1-1.06 0L2.22 9.28a.751.751 0 0 1 .018-1.042.751.751 0 0 1 1.042-.018L6 10.94l6.72-6.72a.75.75 0 0 1 1.06 0Z',
+  x: 'M3.72 3.72a.75.75 0 0 1 1.06 0L8 6.94l3.22-3.22a.749.749 0 0 1 1.275.326.749.749 0 0 1-.215.734L9.06 8l3.22 3.22a.749.749 0 0 1-.326 1.275.749.749 0 0 1-.734-.215L8 9.06l-3.22 3.22a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042L6.94 8 3.72 4.78a.75.75 0 0 1 0-1.06Z',
+  dot: 'M8 4a4 4 0 1 0 0 8 4 4 0 0 0 0-8Z',
+  circle: 'M8 0a8 8 0 1 1 0 16A8 8 0 0 1 8 0Zm0 1.5a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13Z',
+  'circle-filled': 'M8 0a8 8 0 1 1 0 16A8 8 0 0 1 8 0Zm0 4a4 4 0 1 0 0 8 4 4 0 0 0 0-8Z',
+  'alert': 'M6.457 1.047c.659-1.234 2.427-1.234 3.086 0l6.082 11.378A1.75 1.75 0 0 1 14.082 15H1.918a1.75 1.75 0 0 1-1.543-2.575Zm1.763.707a.25.25 0 0 0-.44 0L1.698 13.132a.25.25 0 0 0 .22.368h12.164a.25.25 0 0 0 .22-.368Zm.53 3.996v2.5a.75.75 0 0 1-1.5 0v-2.5a.75.75 0 0 1 1.5 0ZM9 11a1 1 0 1 1-2 0 1 1 0 0 1 2 0Z',
+  comment: 'M1 2.75C1 1.784 1.784 1 2.75 1h10.5c.966 0 1.75.784 1.75 1.75v7.5A1.75 1.75 0 0 1 13.25 12H9.06l-2.573 2.573A1.458 1.458 0 0 1 4 13.543V12H2.75A1.75 1.75 0 0 1 1 10.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h2a.75.75 0 0 1 .75.75v2.19l2.72-2.72a.749.749 0 0 1 .53-.22h4.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z',
+  diff: 'M1.75 0h12.5C15.216 0 16 .784 16 1.75v12.5A1.75 1.75 0 0 1 14.25 16H1.75A1.75 1.75 0 0 1 0 14.25V1.75C0 .784.784 0 1.75 0ZM1.5 1.75v12.5c0 .138.112.25.25.25h12.5a.25.25 0 0 0 .25-.25V1.75a.25.25 0 0 0-.25-.25H1.75a.25.25 0 0 0-.25.25ZM7.25 8a.75.75 0 0 1 .75-.75h2.25V5a.75.75 0 0 1 1.5 0v2.25h2.25a.75.75 0 0 1 0 1.5h-2.25V11a.75.75 0 0 1-1.5 0V8.75H8a.75.75 0 0 1-.75-.75Z',
+  inbox: 'M1.75 1h12.5c.967 0 1.75.784 1.75 1.75v9.5A1.75 1.75 0 0 1 14.25 14H1.75A1.75 1.75 0 0 1 0 12.25v-9.5C0 1.784.784 1 1.75 1Zm.25 8.5h2.7c.4 0 .76.225.94.583l.66 1.32a.25.25 0 0 0 .224.139h3.46a.25.25 0 0 0 .224-.14l.66-1.319A1.05 1.05 0 0 1 11.3 9.5H14V2.75a.25.25 0 0 0-.25-.25H2.25a.25.25 0 0 0-.25.25Z',
+  // Chevrons
+  'chevron-down': 'M12.78 5.22a.749.749 0 0 1 0 1.06l-4.25 4.25a.749.749 0 0 1-1.06 0L3.22 6.28a.749.749 0 1 1 1.06-1.06L8 8.939l3.72-3.719a.749.749 0 0 1 1.06 0Z',
+  'chevron-right': 'M6.22 3.22a.75.75 0 0 1 1.06 0l4.25 4.25a.75.75 0 0 1 0 1.06l-4.25 4.25a.749.749 0 0 1-1.275-.326.749.749 0 0 1 .215-.734L9.94 8 6.22 4.28a.75.75 0 0 1 0-1.06Z',
+  'arrow-undo': 'M1.22 6.28a.749.749 0 0 1 0-1.06l3.5-3.5a.749.749 0 1 1 1.06 1.06L3.561 5h7.188l.001.007L10.749 5C12.683 5 14 6.317 14 8.25v4a.75.75 0 0 1-1.5 0v-4c0-1.105-.645-1.75-1.75-1.75H3.561l2.22 2.22a.749.749 0 1 1-1.061 1.06Z',
+  alert: 'M6.457 1.047c.659-1.234 2.427-1.234 3.086 0l6.082 11.378A1.75 1.75 0 0 1 14.082 15H1.918a1.75 1.75 0 0 1-1.543-2.575Zm1.763.707a.25.25 0 0 0-.44 0L1.698 13.132a.25.25 0 0 0 .22.368h12.164a.25.25 0 0 0 .22-.368Zm.53 3.996v2.5a.75.75 0 0 1-1.5 0v-2.5a.75.75 0 0 1 1.5 0ZM9 11a1 1 0 1 1-2 0 1 1 0 0 1 2 0Z',
+  bell: 'M8 16a2 2 0 0 0 1.985-1.75c.017-.137-.097-.25-.235-.25h-3.5c-.138 0-.252.113-.235.25A2 2 0 0 0 8 16ZM3 5a5 5 0 0 1 10 0v2.947c0 .05.015.098.042.139l1.703 2.555A1.519 1.519 0 0 1 13.482 13H2.518a1.516 1.516 0 0 1-1.263-2.36l1.703-2.554A.255.255 0 0 0 3 7.947Zm5-3.5A3.5 3.5 0 0 0 4.5 5v2.947c0 .346-.102.683-.294.97l-1.703 2.556a.017.017 0 0 0-.003.01l.001.006c0 .002.002.004.004.006l.006.004.007.001h10.964l.007-.001.006-.004.004-.006.001-.007a.017.017 0 0 0-.003-.01l-1.703-2.554a1.745 1.745 0 0 1-.294-.97V5A3.5 3.5 0 0 0 8 1.5Z',
+  search: 'M10.68 11.74a6 6 0 0 1-7.922-8.982 6 6 0 0 1 8.982 7.922l3.04 3.04a.749.749 0 0 1-.326 1.275.749.749 0 0 1-.734-.215ZM11.5 7a4.499 4.499 0 1 0-8.997 0A4.499 4.499 0 0 0 11.5 7Z',
+  smiley: 'M8 0a8 8 0 1 1 0 16A8 8 0 0 1 8 0ZM1.5 8a6.5 6.5 0 1 0 13 0 6.5 6.5 0 0 0-13 0Zm3.275 2.4h6.45a.5.5 0 0 1 .5.55 4 4 0 0 1-7.95 0 .5.5 0 0 1 .5-.55ZM4.5 6.5a1 1 0 1 1 2 0 1 1 0 0 1-2 0Zm5 0a1 1 0 1 1 2 0 1 1 0 0 1-2 0Z',
+};
+
+function octicon(name, size = 16, extraClass = '') {
+  const path = OCTICONS[name];
+  if (!path) return '';
+  return `<svg class="octicon${extraClass ? ' ' + extraClass : ''}" viewBox="0 0 16 16" width="${size}" height="${size}" aria-hidden="true"><path d="${path}"/></svg>`;
+}
 
 // Dismissed PRs: Map of "repo#number" -> updatedAt timestamp at time of dismissal
 function getDismissed() {
@@ -1048,7 +1377,11 @@ function applyTheme(theme) {
   document.documentElement.setAttribute('data-theme', theme);
   localStorage.setItem(STORAGE_KEYS.theme, theme);
   const btn = document.getElementById('theme-toggle');
-  if (btn) btn.textContent = theme === 'dark' ? '\u2600\uFE0F' : '\uD83C\uDF19';
+  if (btn) {
+    // Show the icon of the theme you'll switch *to*.
+    btn.innerHTML = octicon(theme === 'dark' ? 'sun' : 'moon');
+    btn.title = theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme';
+  }
 }
 
 function toggleTheme() {
@@ -1060,7 +1393,19 @@ function toggleTheme() {
 // Apply saved theme immediately (before render)
 applyTheme(localStorage.getItem(STORAGE_KEYS.theme) || 'light');
 
+function paintStaticIcons() {
+  const set = (id, html) => { const el = document.getElementById(id); if (el) el.innerHTML = html; };
+  set('brand-mark', '<img src="img/header-icon.png" alt="" />');
+  set('setup-mark', octicon('git-pull-request', 16));
+  set('settings-dialog-mark', octicon('gear', 16));
+  set('settings-close-btn', octicon('x', 16));
+  set('refresh-btn', octicon('sync', 16));
+  set('settings-btn', octicon('gear', 16));
+  set('logout-btn', octicon('sign-out', 16));
+}
+
 function init() {
+  paintStaticIcons();
   const token = localStorage.getItem(STORAGE_KEYS.token);
   if (token) {
     showDashboard();
@@ -1095,11 +1440,64 @@ async function saveSetup() {
 function showDashboard() {
   document.getElementById('setup-screen').style.display = 'none';
   document.getElementById('dashboard-screen').style.display = '';
+  document.getElementById('app-header').style.display = '';
 
+  paintViewTabIcons();
+  loadUserProfile();
   setupFilterTabs();
   setupDraftToggle();
+  const savedView = localStorage.getItem(STORAGE_KEYS.view) || 'review';
+  switchView(savedView);
   fetchTeamsThenPRs();
   setupAutoRefresh();
+}
+
+function paintViewTabIcons() {
+  const reviewTab = document.getElementById('view-tab-review');
+  const myTab = document.getElementById('view-tab-my-prs');
+  if (reviewTab && !reviewTab.querySelector('.octicon')) {
+    reviewTab.insertAdjacentHTML('afterbegin', octicon('inbox', 16));
+  }
+  if (myTab && !myTab.querySelector('.octicon')) {
+    myTab.insertAdjacentHTML('afterbegin', octicon('git-pull-request', 16));
+  }
+}
+
+async function loadUserProfile() {
+  try {
+    const user = await apiGet('/user');
+    const img = document.getElementById('user-avatar');
+    if (img && user.avatar_url) {
+      img.src = user.avatar_url;
+      img.alt = `@${user.login}`;
+      img.style.display = 'inline-block';
+      img.title = `Signed in as @${user.login}`;
+    }
+  } catch (e) {
+    // Non-fatal
+  }
+}
+
+/* ── Hero greeting ─────────────────────────────────────── */
+function renderHero(stats) {
+  const hero = document.getElementById('hero');
+  const text = document.getElementById('hero-text');
+  if (!hero || !text) return;
+
+  const total = stats?.totalReviews ?? 0;
+  const attention = stats?.myPrsAttention ?? 0;
+
+  let html;
+  if (total === 0 && attention === 0) {
+    html = '<span>All quiet on the review front, <strong>@' + escapeHtml(localStorage.getItem(STORAGE_KEYS.user) || 'friend') + '</strong>.</span>';
+  } else {
+    const parts = [];
+    if (total > 0) parts.push(`<strong>${total}</strong> review${total === 1 ? '' : 's'} await`);
+    if (attention > 0) parts.push(`<span class="alert">${attention}</span> of your PR${attention === 1 ? '' : 's'} need${attention === 1 ? 's' : ''} attention`);
+    html = parts.join(' &middot; ');
+  }
+  text.innerHTML = html;
+  hero.classList.add('visible');
 }
 
 function logout() {
@@ -1120,9 +1518,14 @@ function setupFilterTabs() {
 }
 
 function setupDraftToggle() {
-  document.getElementById('show-drafts').addEventListener('change', () => {
+  const el = document.getElementById('show-drafts');
+  const saved = localStorage.getItem(STORAGE_KEYS.showDrafts);
+  if (saved !== null) el.checked = saved === 'true';
+  el.addEventListener('change', () => {
+    localStorage.setItem(STORAGE_KEYS.showDrafts, el.checked);
     updateCounts();
     renderPRs();
+    renderMyPRs();
   });
 }
 
@@ -1422,21 +1825,40 @@ function saveBotLogins(logins) {
   localStorage.setItem(STORAGE_KEYS.botLogins, JSON.stringify(logins));
 }
 
-let settingsPanelOpen = false;
-
-function toggleSettings() {
-  settingsPanelOpen = !settingsPanelOpen;
-  const panel = document.getElementById('settings-panel');
-  const btn = document.getElementById('settings-btn');
-  if (!panel) return;
-  panel.style.display = settingsPanelOpen ? '' : 'none';
-  btn?.classList.toggle('active', settingsPanelOpen);
-  if (settingsPanelOpen) renderBotFilter();
+function openSettings() {
+  const dlg = document.getElementById('settings-dialog');
+  if (!dlg) return;
+  renderSettingsBody();
+  if (typeof dlg.showModal === 'function') {
+    dlg.showModal();
+  } else {
+    dlg.setAttribute('open', '');
+  }
+  document.getElementById('settings-btn')?.classList.add('active');
+  // Close on backdrop click
+  dlg.addEventListener('click', settingsBackdropClose);
 }
 
-function renderBotFilter() {
-  const panel = document.getElementById('settings-panel');
-  if (!panel) return;
+function settingsBackdropClose(e) {
+  const dlg = e.currentTarget;
+  const rect = dlg.getBoundingClientRect();
+  if (e.clientX < rect.left || e.clientX > rect.right || e.clientY < rect.top || e.clientY > rect.bottom) {
+    closeSettings();
+  }
+}
+
+function closeSettings() {
+  const dlg = document.getElementById('settings-dialog');
+  if (!dlg) return;
+  dlg.removeEventListener('click', settingsBackdropClose);
+  if (typeof dlg.close === 'function') dlg.close();
+  else dlg.removeAttribute('open');
+  document.getElementById('settings-btn')?.classList.remove('active');
+}
+
+function renderSettingsBody() {
+  const body = document.getElementById('settings-dialog-body');
+  if (!body) return;
   const stored = (() => {
     try { return JSON.parse(localStorage.getItem(STORAGE_KEYS.botLogins) ?? 'null') ?? DEFAULT_BOT_LOGINS; }
     catch { return DEFAULT_BOT_LOGINS; }
@@ -1445,23 +1867,29 @@ function renderBotFilter() {
   const chips = stored.map(login => `
     <span class="bot-chip">
       ${escapeHtml(login)}
-      <button class="bot-chip-remove" onclick="removeBotLogin('${escapeHtml(login)}')" title="Remove">&#x2715;</button>
+      <button class="bot-chip-remove" onclick="removeBotLogin('${escapeHtml(login)}')" title="Remove" aria-label="Remove">${octicon('x', 12)}</button>
     </span>`).join('');
 
-  panel.innerHTML = `
-    <div class="settings-section-title">My PRs — Activity tracking</div>
-    <div class="settings-section-desc">
-      Accounts below are ignored when detecting new activity on your open PRs.
-      Use this for CI bots and automation service accounts that register as regular users.
-    </div>
-    <div class="settings-bot-row">
-      ${chips}
-      <span class="bot-filter-add">
-        <input type="text" id="bot-login-input" placeholder="add account…" onkeydown="if(event.key==='Enter')addBotLogin()">
-        <button onclick="addBotLogin()">Add</button>
-      </span>
+  body.innerHTML = `
+    <div class="settings-section">
+      <div class="settings-section-title">My PRs &mdash; Activity tracking</div>
+      <div class="settings-section-desc">
+        Accounts below are ignored when detecting new activity on your open PRs.
+        Use this for CI bots and automation service accounts that register as regular users.
+      </div>
+      <div class="settings-bot-row">
+        ${chips}
+        <span class="bot-filter-add">
+          <input type="text" id="bot-login-input" placeholder="add account&hellip;" onkeydown="if(event.key==='Enter')addBotLogin()">
+          <button onclick="addBotLogin()">Add</button>
+        </span>
+      </div>
     </div>`;
 }
+
+// Backwards-compat alias for any call sites that still call toggleSettings()
+function toggleSettings() { openSettings(); }
+function renderBotFilter() { renderSettingsBody(); }
 
 function addBotLogin() {
   const input = document.getElementById('bot-login-input');
@@ -1567,19 +1995,21 @@ async function fetchMyPRs() {
     const reviewerStates = new Map();
     for (const review of reviews) {
       const login = review.author?.login;
-      if (!login || login === username) continue;
+      if (!login || login === pr.author?.login) continue;
       reviewerStates.set(login, review.state);
     }
     for (const rr of (pr.reviewRequests?.nodes || [])) {
       const login = rr.requestedReviewer?.login;
-      if (login && !reviewerStates.has(login)) {
+      if (login && login !== pr.author?.login && !reviewerStates.has(login)) {
         reviewerStates.set(login, 'PENDING');
       }
-      const team = rr.requestedReviewer;
-      if (!login && team?.slug) {
-        const org = team.organization?.login;
-        const qualified = org ? `${org}/${team.slug}` : team.slug;
-        if (!reviewerStates.has(qualified)) reviewerStates.set(qualified, 'PENDING');
+      if (!login) {
+        const team = rr.requestedReviewer;
+        if (team?.slug) {
+          const org = team.organization?.login;
+          const qualified = org ? `${org}/${team.slug}` : team.slug;
+          if (!reviewerStates.has(qualified)) reviewerStates.set(qualified, 'PENDING');
+        }
       }
     }
 
@@ -1611,7 +2041,8 @@ async function fetchMyPRs() {
 function setLoadingState(message, detail) {
   const container = document.getElementById('pr-container');
   container.innerHTML = `<div class="loading">
-    <div class="spinner"></div><br>${escapeHtml(message)}
+    <div class="spinner"></div>
+    <div>${escapeHtml(message)}</div>
     ${detail ? `<div class="loading-detail">${escapeHtml(detail)}</div>` : ''}
   </div>`;
 }
@@ -1622,7 +2053,7 @@ async function fetchPRs() {
   const errContainer = document.getElementById('error-container');
 
   btn.disabled = true;
-  btn.textContent = 'Loading...';
+  btn.classList.add('spinning');
   errContainer.innerHTML = '';
 
   try {
@@ -1726,18 +2157,18 @@ async function fetchPRs() {
         }
       }
 
-      // Build a map of each reviewer's latest state (excluding the current user)
+      // Build a map of each reviewer's latest state (excluding the PR author)
       const reviewerStates = new Map();
       for (const review of (pr.reviews?.nodes || [])) {
         const login = review.author?.login;
-        if (!login || login === username) continue;
+        if (!login || login === pr.author?.login) continue;
         reviewerStates.set(login, review.state);
       }
 
       // Add pending reviewers (requested but no review submitted yet)
       for (const rr of (pr.reviewRequests?.nodes || [])) {
         const login = rr.requestedReviewer?.login;
-        if (login && login !== username && !reviewerStates.has(login)) {
+        if (login && login !== pr.author?.login && !reviewerStates.has(login)) {
           reviewerStates.set(login, 'PENDING');
           continue;
         }
@@ -1750,7 +2181,7 @@ async function fetchPRs() {
       }
 
       const otherReviewers = Array.from(reviewerStates.entries())
-        .map(([login, state]) => ({ login, state, required: requiredSet.has(login) }))
+        .map(([login, state]) => ({ login, state, required: requiredSet.has(login), isMe: login === username }))
         .sort((a, b) => {
           const order = { APPROVED: 0, CHANGES_REQUESTED: 1, COMMENTED: 2, PENDING: 3, DISMISSED: 4 };
           return (order[a.state] ?? 9) - (order[b.state] ?? 9);
@@ -1783,13 +2214,17 @@ async function fetchPRs() {
     renderPRs();
     renderMyPRs();
     document.getElementById('status-text').textContent = `Updated ${new Date().toLocaleTimeString()}`;
+    renderHero({
+      totalReviews: getViaFilteredPRs().active.length,
+      myPrsAttention: myOwnPRs.filter(pr => pr.needsAttention).length,
+    });
 
   } catch (e) {
-    errContainer.innerHTML = `<div class="error-msg">Failed to fetch PRs: ${escapeHtml(e.message)}</div>`;
+    errContainer.innerHTML = `<div class="error-msg">${octicon('alert', 14)} Failed to fetch PRs: ${escapeHtml(e.message)}</div>`;
     document.getElementById('pr-container').innerHTML = '';
   } finally {
     btn.disabled = false;
-    btn.textContent = 'Refresh';
+    btn.classList.remove('spinning');
   }
 }
 
@@ -1839,7 +2274,7 @@ function renderGroupedList(prs, isDismissedList) {
     const isCollapsed = collapsed.includes(repo);
     const arrowClass = isCollapsed ? 'collapse-arrow collapsed' : 'collapse-arrow';
     html += `<li class="repo-group-header" onclick="toggleRepoCollapse('${escapeHtml(repo)}')">
-      <span class="${arrowClass}">&#x25BC;</span>
+      <span class="${arrowClass}">${octicon('chevron-down', 12)}</span>
       <a href="https://github.com/${repo}" target="_blank" onclick="event.stopPropagation()">${escapeHtml(repo)}</a>
       <span class="repo-count">${repoPrs.length}</span>
     </li>`;
@@ -1864,15 +2299,19 @@ function renderPRs() {
   let html = '';
 
   if (filtered.length === 0 && filteredDismissed.length === 0) {
+    const isAll = currentFilter === 'all';
     html = `
-      <div class="empty-state">
-        <div class="emoji">${currentFilter === 'all' ? '&#x2728;' : '&#x1F50D;'}</div>
-        <p>${currentFilter === 'all' ? 'No pending reviews. You\'re all caught up!' : 'No PRs in this category.'}</p>
+      <div class="blankslate">
+        <div class="blankslate-octicon">${octicon(isAll ? 'smiley' : 'search', 32)}</div>
+        <h3>${isAll ? 'Inbox zero, brave reviewer' : 'No PRs in this category'}</h3>
+        <p>${isAll ? 'No pending reviews. Take a moment to rest at the inn.' : 'Try a different filter, or refresh to fetch the latest.'}</p>
       </div>`;
   } else if (filtered.length === 0) {
     html = `
-      <div class="empty-state">
-        <p>No active PRs${currentFilter !== 'all' ? ' in this category' : ''}.</p>
+      <div class="blankslate">
+        <div class="blankslate-octicon">${octicon('search', 32)}</div>
+        <h3>No active PRs</h3>
+        <p>Nothing matches the current filter.</p>
       </div>`;
   } else {
     html = renderGroupedList(filtered, false);
@@ -1882,7 +2321,7 @@ function renderPRs() {
     const arrowClass = dismissedShowExpanded ? 'arrow open' : 'arrow';
     html += `<div class="dismissed-section">
       <button class="dismissed-toggle" onclick="toggleDismissedSection()">
-        <span class="${arrowClass}">&#x25B6;</span>
+        <span class="${arrowClass}">${octicon('chevron-right', 12)}</span>
         ${filteredDismissed.length} dismissed
       </button>
       ${dismissedShowExpanded ? renderGroupedList(filteredDismissed, true) : ''}
@@ -1910,8 +2349,7 @@ function renderPRCard(pr, isDismissedCard = false) {
     : { NONE: 'Review required', COMMENTED: 'Commented', CHANGES_REQUESTED: 'Changes requested', DISMISSED: 'Dismissed' }[pr.myState] || pr.myState;
 
   const labels = (pr.labels?.nodes || []).map(l => {
-    const c = labelColors(l.color);
-    return `<span class="pr-label" style="background:${c.bg}; color:${c.text}; border-color:${c.border};">${escapeHtml(l.name)}</span>`;
+    return `<span class="pr-label">${escapeHtml(l.name)}</span>`;
   }).join('');
 
   const draft = pr.isDraft ? '<span style="color:var(--text-dim);">[Draft]</span> ' : '';
@@ -1923,56 +2361,27 @@ function renderPRCard(pr, isDismissedCard = false) {
     return `<span class="pr-via-badge via-team">${escapeHtml(via)}</span>`;
   }).join('');
 
-  const reviewerBadges = (pr.otherReviewers || []).map(r => {
-    const isRequiredPending = r.state === 'PENDING' && r.required;
-    const cls = {
-      APPROVED: 'rv-approved',
-      CHANGES_REQUESTED: 'rv-changes',
-      COMMENTED: 'rv-commented',
-      PENDING: isRequiredPending ? 'rv-required' : 'rv-pending',
-      DISMISSED: 'rv-pending'
-    }[r.state] || 'rv-pending';
-
-    const icon = {
-      APPROVED: '&#x2713;',
-      CHANGES_REQUESTED: '&#x21BB;',
-      COMMENTED: '&#x1F4AC;',
-      PENDING: isRequiredPending ? '&#x25C9;' : '&#x25CB;',
-      DISMISSED: '&#x2014;'
-    }[r.state] || '&#x25CB;';
-
-    const title = isRequiredPending ? ' title="Required reviewer"' : r.state === 'PENDING' ? ' title="Review requested"' : '';
-    return `<span class="pr-reviewer ${cls}"${title}><span class="rv-icon">${icon}</span> ${escapeHtml(r.login)}</span>`;
-  }).join('');
+  const reviewerBadges = (pr.otherReviewers || []).map(r => renderReviewerChip(r)).join('');
 
   const key = prKey(pr);
   const escapedKey = escapeHtml(key);
   const dismissedClass = isDismissedCard ? ' dismissed-card' : '';
   const actionBtn = isDismissedCard
-    ? `<button class="pr-dismiss" style="opacity:1;" onclick="restorePR('${escapedKey}')" title="Restore">&#x21A9;</button>`
-    : `<button class="pr-dismiss" onclick="dismissPR('${escapedKey}', '${pr.updatedAt}')" title="Dismiss">&#x2715;</button>`;
+    ? `<button class="pr-dismiss" style="opacity:1;" onclick="restorePR('${escapedKey}')" title="Restore" aria-label="Restore">${octicon('arrow-undo', 12)}</button>`
+    : `<button class="pr-dismiss" onclick="dismissPR('${escapedKey}', '${pr.updatedAt}')" title="Dismiss" aria-label="Dismiss">${octicon('x', 12)}</button>`;
 
   return `
     <li class="pr-card ${stateClass}${dismissedClass}">
       ${actionBtn}
       <div class="pr-body">
         <div class="pr-title-row">
-          <a class="pr-title" href="${pr.url}" target="_blank" rel="noopener">${draft}${escapeHtml(pr.title)}</a>
-          <span class="pr-number">#${pr.number}</span>
+          <span class="pr-number">#${pr.number}</span><a class="pr-title" href="${pr.url}" target="_blank" rel="noopener">${draft}${escapeHtml(pr.title)}</a>
         </div>
         <div class="pr-meta">
           <span>by <a href="https://github.com/${pr.author?.login}" target="_blank">@${escapeHtml(pr.author?.login || '?')}</a></span>
           <span>opened ${timeAgo(pr.createdAt)}</span>
-          ${pr.ciState ? (() => {
-            const cfg = {
-              success: { cls: 'ci-success', icon: '&#x2713;', label: 'CI passed' },
-              failure: { cls: 'ci-failure', icon: '&#x2717;', label: 'CI failed' },
-              pending: { cls: 'ci-pending', icon: '&#x25CF;', label: 'CI running' },
-            }[pr.ciState];
-            return cfg ? `<span class="pr-ci-inline ${cfg.cls}">${cfg.icon} ${cfg.label}</span>` : '';
-          })() : ''}
+          ${renderCiInline(pr.ciState)}
         </div>
-        ${viaBadges ? `<div class="pr-requested-via">${viaBadges}</div>` : ''}
         ${reviewerBadges ? `<div class="pr-reviewers"><span class="pr-reviewers-label">Reviews:</span>${reviewerBadges}</div>` : ''}
         ${labels ? `<div class="pr-labels">${labels}</div>` : ''}
       </div>
@@ -1983,8 +2392,56 @@ function renderPRCard(pr, isDismissedCard = false) {
     </li>`;
 }
 
+/* ── Shared chip renderers ─────────────────────────────── */
+function renderReviewerChip(r) {
+  const isRequiredPending = r.state === 'PENDING' && r.required;
+  const isMyTeam = r.required && userTeams.some(t => t.qualified === r.login);
+  const cls = r.isMe ? 'rv-me' : ({
+    APPROVED: 'rv-approved',
+    CHANGES_REQUESTED: 'rv-changes',
+    COMMENTED: 'rv-commented',
+    PENDING: isRequiredPending ? (isMyTeam ? 'rv-required' : 'rv-required-other') : 'rv-pending',
+    DISMISSED: 'rv-pending'
+  }[r.state] || 'rv-pending');
+
+  const iconMap = {
+    APPROVED: octicon('check', 12),
+    CHANGES_REQUESTED: octicon('diff', 12),
+    COMMENTED: octicon('comment', 12),
+    PENDING: isRequiredPending ? octicon('alert', 12) : octicon('circle', 12),
+    DISMISSED: octicon('x', 12),
+  };
+  const icon = iconMap[r.state] || octicon('circle', 12);
+
+  const title = isRequiredPending
+    ? ' title="Required reviewer (CODEOWNER)"'
+    : r.state === 'PENDING' ? ' title="Review requested"' : '';
+  return `<span class="pr-reviewer ${cls}"${title}><span class="rv-icon">${icon}</span>${escapeHtml(r.login)}</span>`;
+}
+
+function renderCiInline(ciState) {
+  if (!ciState) return '';
+  const cfg = {
+    success: { cls: 'ci-success', icon: octicon('check', 12), label: 'CI passed' },
+    failure: { cls: 'ci-failure', icon: octicon('x', 12), label: 'CI failed' },
+    pending: { cls: 'ci-pending', icon: octicon('dot', 12), label: 'CI running' },
+  }[ciState];
+  return cfg ? `<span class="pr-ci-inline ${cfg.cls}">${cfg.icon} ${cfg.label}</span>` : '';
+}
+
+function renderCiBadge(ciState) {
+  if (!ciState) return '';
+  const cfg = {
+    success: { cls: 'ci-success', icon: octicon('check', 12), label: 'CI passed' },
+    failure: { cls: 'ci-failure', icon: octicon('x', 12), label: 'CI failed' },
+    pending: { cls: 'ci-pending', icon: octicon('dot', 12), label: 'CI running' },
+  }[ciState];
+  return cfg ? `<span class="pr-ci-badge ${cfg.cls}">${cfg.icon} ${cfg.label}</span>` : '';
+}
+
 function switchView(view) {
   currentView = view;
+  localStorage.setItem(STORAGE_KEYS.view, view);
   document.getElementById('review-view').style.display = view === 'review' ? '' : 'none';
   document.getElementById('my-prs-view').style.display = view === 'my-prs' ? '' : 'none';
   document.getElementById('view-tab-review').classList.toggle('active', view === 'review');
@@ -1995,55 +2452,26 @@ function renderMyPRCard(pr) {
   const draft = pr.isDraft ? '<span style="color:var(--text-dim);">[Draft]</span> ' : '';
 
   const attentionHtml = pr.needsAttention
-    ? `<div class="pr-attention">&#x21A9; @${escapeHtml(pr.lastActivityLogin)} responded</div>`
+    ? `<div class="pr-attention">${octicon('bell', 12)} @${escapeHtml(pr.lastActivityLogin)} responded</div>`
     : '';
 
-  const reviewerBadges = (pr.otherReviewers || []).map(r => {
-    const isRequiredPending = r.state === 'PENDING' && r.required;
-    const cls = {
-      APPROVED: 'rv-approved',
-      CHANGES_REQUESTED: 'rv-changes',
-      COMMENTED: 'rv-commented',
-      PENDING: isRequiredPending ? 'rv-required' : 'rv-pending',
-      DISMISSED: 'rv-pending'
-    }[r.state] || 'rv-pending';
-
-    const icon = {
-      APPROVED: '&#x2713;',
-      CHANGES_REQUESTED: '&#x21BB;',
-      COMMENTED: '&#x1F4AC;',
-      PENDING: isRequiredPending ? '&#x25C9;' : '&#x25CB;',
-      DISMISSED: '&#x2014;'
-    }[r.state] || '&#x25CB;';
-
-    const title = isRequiredPending ? ' title="Required reviewer"' : r.state === 'PENDING' ? ' title="Review requested"' : '';
-    return `<span class="pr-reviewer ${cls}"${title}><span class="rv-icon">${icon}</span> ${escapeHtml(r.login)}</span>`;
-  }).join('');
+  const reviewerBadges = (pr.otherReviewers || []).map(r => renderReviewerChip(r)).join('');
 
   const labels = (pr.labels?.nodes || []).map(l => {
-    const c = labelColors(l.color);
-    return `<span class="pr-label" style="background:${c.bg}; color:${c.text}; border-color:${c.border};">${escapeHtml(l.name)}</span>`;
+    return `<span class="pr-label">${escapeHtml(l.name)}</span>`;
   }).join('');
 
   const rdHtml = (() => {
     const cfg = {
-      APPROVED: { cls: 'rd-approved', icon: '&#x2713;', label: 'Approved' },
-      CHANGES_REQUESTED: { cls: 'rd-changes', icon: '&#x21BB;', label: 'Changes requested' },
-      REVIEW_REQUIRED: { cls: 'rd-required', icon: '&#x25CB;', label: 'Review required' },
+      APPROVED: { cls: 'rd-approved', icon: octicon('check', 12), label: 'Approved' },
+      CHANGES_REQUESTED: { cls: 'rd-changes', icon: octicon('diff', 12), label: 'Changes requested' },
+      REVIEW_REQUIRED: { cls: 'rd-required', icon: octicon('circle', 12), label: 'Review required' },
     }[pr.reviewDecision];
     if (!cfg) return '';
     return `<span class="pr-review-decision ${cfg.cls}">${cfg.icon} ${cfg.label}</span>`;
   })();
 
-  const ciHtml = pr.ciState ? (() => {
-    const cfg = {
-      success: { cls: 'ci-success', icon: '&#x2713;', label: 'CI passed' },
-      failure: { cls: 'ci-failure', icon: '&#x2717;', label: 'CI failed' },
-      pending: { cls: 'ci-pending', icon: '&#x25CF;', label: 'CI running' },
-    }[pr.ciState];
-    if (!cfg) return '';
-    return `<span class="pr-ci-badge ${cfg.cls}">${cfg.icon} ${cfg.label}</span>`;
-  })() : '';
+  const ciHtml = renderCiBadge(pr.ciState);
 
   const attentionClass = pr.needsAttention ? ' needs-attention' : '';
 
@@ -2051,8 +2479,7 @@ function renderMyPRCard(pr) {
     <li class="pr-card${attentionClass}">
       <div class="pr-body">
         <div class="pr-title-row">
-          <a class="pr-title" href="${pr.url}" target="_blank" rel="noopener">${draft}${escapeHtml(pr.title)}</a>
-          <span class="pr-number">#${pr.number}</span>
+          <span class="pr-number">#${pr.number}</span><a class="pr-title" href="${pr.url}" target="_blank" rel="noopener">${draft}${escapeHtml(pr.title)}</a>
         </div>
         <div class="pr-meta">
           <span>${escapeHtml(pr.repo)}</span>
@@ -2089,7 +2516,11 @@ function renderMyPRs() {
   countEl.className = `view-tab-count${attentionCount > 0 ? ' has-attention' : ''}`;
 
   if (visible.length === 0) {
-    container.innerHTML = `<div class="empty-state" style="padding:32px 20px;"><p>${myOwnPRs.length === 0 ? 'No open PRs authored or assigned to you.' : 'No non-draft PRs authored or assigned to you.'}</p></div>`;
+    container.innerHTML = `<div class="blankslate">
+      <div class="blankslate-octicon">${octicon('git-pull-request', 32)}</div>
+      <h3>No open PRs of your own</h3>
+      <p>${myOwnPRs.length === 0 ? 'Nothing authored or assigned to you. Time to start a new quest.' : 'All your open PRs are drafts. Toggle "Show drafts" to see them.'}</p>
+    </div>`;
     return;
   }
 
