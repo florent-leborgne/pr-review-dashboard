@@ -504,6 +504,24 @@
     flex-wrap: wrap;
   }
 
+  .teams-collapse-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--text-dim);
+    padding: 1px 4px;
+    border-radius: 4px;
+    font-size: 11px;
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    transition: color 0.15s, background 0.15s;
+    flex-shrink: 0;
+  }
+  .teams-collapse-btn:hover { color: var(--text); background: var(--badge-muted-bg); }
+  .teams-collapse-btn svg { transition: transform 0.2s; }
+  .teams-collapse-btn.collapsed svg { transform: rotate(-90deg); }
+
   .teams-info .team-badge.muted,
   .teams-info .user-badge.muted {
     opacity: 0.35;
@@ -1252,7 +1270,7 @@
 </footer>
 
 <script>
-const STORAGE_KEYS = { token: 'prd_token', user: 'prd_user', teams: 'prd_teams', theme: 'prd_theme', dismissed: 'prd_dismissed', collapsedRepos: 'prd_collapsed_repos', collapsedMyRepos: 'prd_collapsed_my_repos', mutedTeams: 'prd_muted_teams', botLogins: 'prd_bot_logins', showDrafts: 'prd_show_drafts', view: 'prd_view' };
+const STORAGE_KEYS = { token: 'prd_token', user: 'prd_user', teams: 'prd_teams', theme: 'prd_theme', dismissed: 'prd_dismissed', collapsedRepos: 'prd_collapsed_repos', collapsedMyRepos: 'prd_collapsed_my_repos', mutedTeams: 'prd_muted_teams', botLogins: 'prd_bot_logins', showDrafts: 'prd_show_drafts', view: 'prd_view', teamsBarCollapsed: 'prd_teams_bar_collapsed', excludedTeams: 'prd_excluded_teams' };
 const DEFAULT_BOT_LOGINS = ['elasticmachine', 'macroscopeapp'];
 let allPRs = [];
 let currentFilter = 'all';
@@ -1382,6 +1400,43 @@ function toggleMuteTeam(teamOrDirect) {
   renderTeamsInfo();
   updateCounts();
   renderPRs();
+}
+
+function getExcludedTeams() {
+  try { return JSON.parse(localStorage.getItem(STORAGE_KEYS.excludedTeams) || '[]'); }
+  catch { return []; }
+}
+
+function saveExcludedTeams(list) {
+  localStorage.setItem(STORAGE_KEYS.excludedTeams, JSON.stringify(list));
+}
+
+function addExcludedTeam(qualified) {
+  const excluded = getExcludedTeams();
+  if (excluded.includes(qualified)) return;
+  saveExcludedTeams([...excluded, qualified]);
+  // Clear active filter if it was for this team
+  if (currentRequestedViaFilter === qualified) currentRequestedViaFilter = null;
+  renderTeamsInfo();
+  updateCounts();
+  renderPRs();
+}
+
+function removeExcludedTeam(qualified) {
+  saveExcludedTeams(getExcludedTeams().filter(t => t !== qualified));
+  renderTeamsInfo();
+  updateCounts();
+  renderPRs();
+}
+
+function getTeamsBarCollapsed() {
+  return localStorage.getItem(STORAGE_KEYS.teamsBarCollapsed) === 'true';
+}
+
+function toggleTeamsBar() {
+  const collapsed = !getTeamsBarCollapsed();
+  localStorage.setItem(STORAGE_KEYS.teamsBarCollapsed, collapsed ? 'true' : 'false');
+  renderTeamsInfo();
 }
 
 let refreshTimer = null;
@@ -1624,6 +1679,24 @@ function renderTeamsInfo() {
   const container = document.getElementById('teams-container');
   const username = localStorage.getItem(STORAGE_KEYS.user);
   const muted = getMutedTeams();
+  const excluded = getExcludedTeams();
+  const collapsed = getTeamsBarCollapsed();
+
+  // Teams visible in the bar (not excluded)
+  const visibleTeams = userTeams.filter(t => !excluded.includes(t.qualified));
+
+  const collapseClass = collapsed ? ' collapsed' : '';
+  const collapseTitle = collapsed ? 'Expand teams bar' : 'Collapse teams bar';
+  const toggleBtn = `<button class="teams-collapse-btn${collapseClass}" onclick="toggleTeamsBar()" title="${collapseTitle}" aria-label="${collapseTitle}">${octicon('chevron-down', 12)}</button>`;
+
+  if (collapsed) {
+    const teamCount = visibleTeams.length;
+    const summary = teamCount > 0
+      ? `@${escapeHtml(username)} + ${teamCount} team${teamCount !== 1 ? 's' : ''}`
+      : `@${escapeHtml(username)}`;
+    container.innerHTML = `<div class="teams-info">${toggleBtn}<span>Tracking reviews for ${summary}</span></div>`;
+    return;
+  }
 
   const directMuted = muted.includes('direct') ? ' muted' : '';
   const directActive = currentRequestedViaFilter === 'direct' ? ' active' : '';
@@ -1631,23 +1704,29 @@ function renderTeamsInfo() {
 
   if (userTeams.length === 0) {
     container.innerHTML = `<div class="teams-info">
-      Tracking reviews for ${userBadge}
+      ${toggleBtn} Tracking reviews for ${userBadge}
       <span style="color:var(--text-dim);">No teams detected (add <code>read:org</code> scope to see team reviews)</span>
     </div>`;
   } else {
-    const teamBadges = userTeams.map(t => {
+    const teamBadges = visibleTeams.map(t => {
       const isActive = currentRequestedViaFilter === t.qualified ? ' active' : '';
       const isMuted = muted.includes(t.qualified) ? ' muted' : '';
       return `<span class="team-badge${isActive}${isMuted}" data-via-filter="${escapeHtml(t.qualified)}" data-mute-target="${escapeHtml(t.qualified)}">${escapeHtml(t.qualified)}</span>`;
     }).join('');
 
+    const hiddenCount = excluded.filter(q => userTeams.some(t => t.qualified === q)).length;
+    const hiddenNote = hiddenCount > 0
+      ? `<span style="color:var(--text-dim); font-size:10px;">(${hiddenCount} hidden in settings)</span>`
+      : '';
+
     container.innerHTML = `<div class="teams-info">
-      Tracking reviews for ${userBadge} ${teamBadges}
+      ${toggleBtn} Tracking reviews for ${userBadge} ${teamBadges} ${hiddenNote}
       <span style="color:var(--text-dim); font-size:10px; margin-left:4px;" title="Click to filter. Double-click to mute/unmute.">click: filter · double-click: mute</span>
     </div>`;
   }
 
   container.querySelector('.teams-info').addEventListener('click', (e) => {
+    if (e.target.closest('.teams-collapse-btn')) return;
     const badge = e.target.closest('[data-via-filter]');
     if (!badge) return;
     const filterValue = badge.dataset.viaFilter;
@@ -1663,6 +1742,7 @@ function renderTeamsInfo() {
   });
 
   container.querySelector('.teams-info').addEventListener('dblclick', (e) => {
+    if (e.target.closest('.teams-collapse-btn')) return;
     const badge = e.target.closest('[data-mute-target]');
     if (!badge) return;
     e.preventDefault();
@@ -1884,6 +1964,30 @@ function renderSettingsBody() {
       <button class="bot-chip-remove" onclick="removeBotLogin('${escapeHtml(login)}')" title="Remove" aria-label="Remove">${octicon('x', 12)}</button>
     </span>`).join('');
 
+  // Excluded teams section
+  const excluded = getExcludedTeams();
+  const username = localStorage.getItem(STORAGE_KEYS.user) || '';
+  // Teams the user belongs to and hasn't already excluded
+  const availableToExclude = userTeams.filter(t => !excluded.includes(t.qualified));
+
+  const excludedChips = excluded.map(q => `
+    <span class="bot-chip">
+      ${escapeHtml(q)}
+      <button class="bot-chip-remove" onclick="removeExcludedTeam('${escapeHtml(q)}')" title="Remove" aria-label="Remove">${octicon('x', 12)}</button>
+    </span>`).join('');
+
+  const excludeAddControl = availableToExclude.length > 0
+    ? `<span class="bot-filter-add">
+        <select id="excluded-team-select" style="font-size:12px; padding:3px 6px; border-radius:6px; border:1px solid var(--border-muted); background:var(--surface); color:var(--text);">
+          <option value="">exclude a team&hellip;</option>
+          ${availableToExclude.map(t => `<option value="${escapeHtml(t.qualified)}">${escapeHtml(t.qualified)}</option>`).join('')}
+        </select>
+        <button onclick="addExcludedTeamFromSelect()">Add</button>
+      </span>`
+    : (userTeams.length === 0
+        ? `<span style="color:var(--text-dim); font-size:11px;">No teams loaded yet.</span>`
+        : `<span style="color:var(--text-dim); font-size:11px;">All your teams are already excluded.</span>`);
+
   body.innerHTML = `
     <div class="settings-section">
       <div class="settings-section-title">My PRs &mdash; Activity tracking</div>
@@ -1898,7 +2002,26 @@ function renderSettingsBody() {
           <button onclick="addBotLogin()">Add</button>
         </span>
       </div>
+    </div>
+    <div class="settings-section">
+      <div class="settings-section-title">Team tag exclusions</div>
+      <div class="settings-section-desc">
+        Teams listed here will not appear in the team bar, and review requests sent only to those teams will be hidden from your dashboard.
+        You can only exclude teams you belong to.
+      </div>
+      <div class="settings-bot-row">
+        ${excludedChips}
+        ${excludeAddControl}
+      </div>
     </div>`;
+}
+
+function addExcludedTeamFromSelect() {
+  const sel = document.getElementById('excluded-team-select');
+  const val = sel?.value;
+  if (!val) return;
+  addExcludedTeam(val);
+  renderSettingsBody();
 }
 
 // Backwards-compat alias for any call sites that still call toggleSettings()
@@ -2245,14 +2368,16 @@ async function fetchPRs() {
 function getViaFilteredPRs() {
   const showDrafts = document.getElementById('show-drafts')?.checked ?? true;
   const muted = getMutedTeams();
+  const excluded = getExcludedTeams();
+  const hidden = [...new Set([...muted, ...excluded])];
   let prs = allPRs;
   if (!showDrafts) prs = prs.filter(pr => !pr.isDraft);
   if (currentRequestedViaFilter) prs = prs.filter(pr => pr.requestedVia.includes(currentRequestedViaFilter));
-  // Exclude PRs whose only requestedVia entries are all muted
-  if (muted.length > 0) {
+  // Exclude PRs whose only requestedVia entries are all muted or excluded
+  if (hidden.length > 0) {
     prs = prs.filter(pr => {
       if (pr.requestedVia.length === 0) return true;
-      return pr.requestedVia.some(via => !muted.includes(via));
+      return pr.requestedVia.some(via => !hidden.includes(via));
     });
   }
   const active = prs.filter(pr => !isDismissed(pr));
