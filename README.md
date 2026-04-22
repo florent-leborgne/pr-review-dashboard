@@ -12,6 +12,7 @@ GitHub's built-in search can tell you which PRs you're "involved" in, but can't 
 - **Filters by review state**: Pending review, Commented, Changes requested
 - **Filters by reviewer**: Click any team/user badge in the header to filter PRs for that specific reviewer
 - **Team muting**: Double-click a team or user badge to mute it — those PRs are hidden until you unmute
+- **Collapsible teams bar**: Click the chevron next to the teams bar to collapse it to a compact summary line (state persisted)
 - **Required reviewer chips**: CODEOWNERs are highlighted with a distinct badge so you know when you're the required approver
 - **Other reviewers' status**: See who else has approved, commented, requested changes, or is still pending
 - **CI status**: Each PR shows its current CI state (passed, failed, running) inline
@@ -26,7 +27,9 @@ GitHub's built-in search can tell you which PRs you're "involved" in, but can't 
 - **Collapsible repo sections**: Same expand/collapse per repo as the Review Requests tab
 
 ### General
-- **Settings panel**: Configure bot/service accounts to exclude from activity detection (gear icon in the header)
+- **Settings panel**: Two configuration options (gear icon in the header):
+  - **Bot/service accounts**: Accounts to ignore when detecting new activity on your PRs
+  - **Team tag exclusions**: Teams you never want to track — they are removed from the teams bar and their review requests are hidden from the dashboard. You can only exclude teams you belong to; your own handle cannot be excluded.
 - **Draft toggle**: Show or hide draft PRs with a single click (shared across both tabs)
 - **Light & dark theme**: Light theme by default, with a toggle to switch to dark mode (persisted)
 - **Accessible label colors**: Label colors are automatically adjusted for contrast based on the active theme
