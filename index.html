@@ -1683,22 +1683,22 @@ async function checkGitHubStatus() {
     const indicator = data.status?.indicator;
     const description = data.status?.description || 'GitHub is experiencing issues';
 
-    // Find components relevant to the dashboard (search + API)
-    const affected = (data.components || [])
-      .filter(c => c.status !== 'operational' && /search|api|issues|pull/i.test(c.name))
-      .map(c => c.name);
-
     if (!indicator || indicator === 'none') {
       badge.style.display = 'none';
       return;
     }
 
-    const label = affected.length > 0
-      ? `GitHub: ${affected.slice(0, 2).join(', ')} degraded`
-      : `GitHub: ${description}`;
+    // Find components relevant to the dashboard for the tooltip detail
+    const affected = (data.components || [])
+      .filter(c => c.status !== 'operational' && /search|api|issues|pull/i.test(c.name))
+      .map(c => c.name);
 
-    badge.textContent = label;
-    badge.title = description;
+    const tooltip = affected.length > 0
+      ? `${description} — affected: ${affected.join(', ')}`
+      : description;
+
+    badge.textContent = `GitHub: ${description}`;
+    badge.title = tooltip;
     badge.className = `gh-status-badge gh-${indicator}`;
     badge.style.display = 'inline-flex';
   } catch {
