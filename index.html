@@ -2106,12 +2106,19 @@ async function fetchMyPRs() {
   const results = await Promise.all(
     queries.map(q => searchMyPRs(q.query).catch(err => {
       console.warn(`My PRs search failed for "${q.label}":`, err);
-      return [];
+      return null; // null = failed, [] = genuinely empty
     }))
   );
 
+  // If every search errored out, preserve existing data rather than wiping it.
+  if (results.every(r => r === null)) {
+    console.warn('All My PRs searches failed — keeping existing data.');
+    return;
+  }
+
   const seen = new Map();
   for (const batch of results) {
+    if (!batch) continue; // skip failed searches
     for (const pr of batch) {
       const key = `${pr.repository?.nameWithOwner}#${pr.number}`;
       if (!seen.has(key)) seen.set(key, pr);
@@ -2276,15 +2283,24 @@ async function fetchPRs() {
       Promise.all(
         queries.map(q => searchPRs(q.query).catch(err => {
           console.warn(`Search failed for "${q.label}":`, err);
-          return [];
+          return null; // null = failed, [] = genuinely empty
         }))
       ),
       fetchMyPRs().catch(err => console.warn('My PRs fetch failed:', err))
     ]);
 
+    // If every review search errored out, preserve existing data.
+    if (results.every(r => r === null)) {
+      console.warn('All review searches failed — keeping existing data.');
+      renderPRs();
+      renderMyPRs();
+      return;
+    }
+
     // Merge and deduplicate by unique PR key (repo + number)
     const seen = new Map();
     for (const batch of results) {
+      if (!batch) continue; // skip failed searches
       for (const pr of batch) {
         const key = `${pr.repository?.nameWithOwner}#${pr.number}`;
         if (!seen.has(key)) {
