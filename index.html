@@ -1693,9 +1693,24 @@ async function checkGitHubStatus() {
       return;
     }
 
-    const affectedNames = affected.map(c => c.name).join(', ');
-    badge.innerHTML = `${octicon('mark-github', 12)}${octicon('alert', 12)} ${description}`;
-    badge.title = `Affected: ${affectedNames}`;
+    const componentImpacts = {
+      'search':        'PR lists may be incomplete or fail to load.',
+      'api':           'Dashboard data may not refresh correctly.',
+      'pull request':  'PR data, reviews, and comments may be unavailable.',
+      'git operation': 'Repository data may be stale or unavailable.',
+    };
+
+    const impactLines = affected.map(c => {
+      const key = Object.keys(componentImpacts).find(k => new RegExp(k, 'i').test(c.name));
+      const impact = key ? componentImpacts[key] : 'Dashboard functionality may be affected.';
+      return `• ${c.name}: ${impact}`;
+    });
+
+    const sentenceDesc = description.charAt(0).toUpperCase() + description.slice(1).toLowerCase();
+    const tooltip = `${impactLines.join('\n')}\n\nClick to view the GitHub status page.`;
+
+    badge.innerHTML = `${octicon('mark-github', 12)}${octicon('alert', 12)} ${sentenceDesc}`;
+    badge.title = tooltip;
     badge.className = `gh-status-badge gh-${indicator}`;
     badge.style.display = 'inline-flex';
   } catch {
