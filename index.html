@@ -2257,22 +2257,30 @@ async function fetchMyPRs() {
     // Track last decisive state (APPROVED/CHANGES_REQUESTED) separately so we
     // can detect "approved then left a follow-up comment" (APPROVED_COMMENTED).
     const reviewerStates = new Map();
-    const reviewerLastDecisive = new Map();
+    const reviewerLastDecisive = new Map();   // login → state
+    const reviewerLastDecisiveAt = new Map(); // login → ISO timestamp
     for (const review of reviews) {
       const login = review.author?.login;
       if (!login || login === pr.author?.login) continue;
       if (review.state === 'APPROVED' || review.state === 'CHANGES_REQUESTED') {
         reviewerLastDecisive.set(login, review.state);
+        reviewerLastDecisiveAt.set(login, review.createdAt);
       }
       reviewerStates.set(login, review.state);
     }
-    // Also surface human PR commenters who never submitted a formal review
+    // Surface PR commenters: add if no review yet, or promote APPROVED → APPROVED_COMMENTED
+    // if the comment came after the approval (covers formal review + inline PR comment).
     for (const comment of comments) {
       const login = comment.author?.login;
       if (!login || login === pr.author?.login || !isHumanActor(comment.author)) continue;
-      if (!reviewerStates.has(login)) reviewerStates.set(login, 'COMMENTED');
+      if (!reviewerStates.has(login)) {
+        reviewerStates.set(login, 'COMMENTED');
+      } else if (reviewerLastDecisive.get(login) === 'APPROVED' &&
+                 comment.createdAt > (reviewerLastDecisiveAt.get(login) || '')) {
+        reviewerStates.set(login, 'APPROVED_COMMENTED');
+      }
     }
-    // Promote COMMENTED to APPROVED_COMMENTED when the reviewer previously approved
+    // Also promote review-based COMMENTED → APPROVED_COMMENTED (formal COMMENTED review after approval)
     for (const [login, state] of reviewerStates) {
       if (state === 'COMMENTED' && reviewerLastDecisive.get(login) === 'APPROVED') {
         reviewerStates.set(login, 'APPROVED_COMMENTED');
@@ -2450,22 +2458,30 @@ async function fetchPRs() {
       // Build a map of each reviewer's latest state (excluding the PR author).
       // Track last decisive state to detect "approved then commented" (APPROVED_COMMENTED).
       const reviewerStates = new Map();
-      const reviewerLastDecisive = new Map();
+      const reviewerLastDecisive = new Map();   // login → state
+      const reviewerLastDecisiveAt = new Map(); // login → ISO timestamp
       for (const review of (pr.reviews?.nodes || [])) {
         const login = review.author?.login;
         if (!login || login === pr.author?.login) continue;
         if (review.state === 'APPROVED' || review.state === 'CHANGES_REQUESTED') {
           reviewerLastDecisive.set(login, review.state);
+          reviewerLastDecisiveAt.set(login, review.createdAt);
         }
         reviewerStates.set(login, review.state);
       }
-      // Also surface human PR commenters who never submitted a formal review
+      // Surface PR commenters: add if no review yet, or promote APPROVED → APPROVED_COMMENTED
+      // if the comment came after the approval (covers formal review + inline PR comment).
       for (const comment of (pr.comments?.nodes || [])) {
         const login = comment.author?.login;
         if (!login || login === pr.author?.login || !isHumanActor(comment.author)) continue;
-        if (!reviewerStates.has(login)) reviewerStates.set(login, 'COMMENTED');
+        if (!reviewerStates.has(login)) {
+          reviewerStates.set(login, 'COMMENTED');
+        } else if (reviewerLastDecisive.get(login) === 'APPROVED' &&
+                   comment.createdAt > (reviewerLastDecisiveAt.get(login) || '')) {
+          reviewerStates.set(login, 'APPROVED_COMMENTED');
+        }
       }
-      // Promote COMMENTED → APPROVED_COMMENTED when reviewer previously approved
+      // Also promote review-based COMMENTED → APPROVED_COMMENTED (formal COMMENTED review after approval)
       for (const [login, state] of reviewerStates) {
         if (state === 'COMMENTED' && reviewerLastDecisive.get(login) === 'APPROVED') {
           reviewerStates.set(login, 'APPROVED_COMMENTED');
