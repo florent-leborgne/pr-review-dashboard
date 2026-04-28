@@ -1914,6 +1914,12 @@ async function searchPRs(searchQuery) {
                   createdAt
                 }
               }
+              comments(last: 10) {
+                nodes {
+                  author { login __typename }
+                  createdAt
+                }
+              }
               commits(last: 1) {
                 nodes {
                   commit {
@@ -2260,6 +2266,12 @@ async function fetchMyPRs() {
       }
       reviewerStates.set(login, review.state);
     }
+    // Also surface human PR commenters who never submitted a formal review
+    for (const comment of comments) {
+      const login = comment.author?.login;
+      if (!login || login === pr.author?.login || !isHumanActor(comment.author)) continue;
+      if (!reviewerStates.has(login)) reviewerStates.set(login, 'COMMENTED');
+    }
     // Promote COMMENTED to APPROVED_COMMENTED when the reviewer previously approved
     for (const [login, state] of reviewerStates) {
       if (state === 'COMMENTED' && reviewerLastDecisive.get(login) === 'APPROVED') {
@@ -2435,12 +2447,29 @@ async function fetchPRs() {
         }
       }
 
-      // Build a map of each reviewer's latest state (excluding the PR author)
+      // Build a map of each reviewer's latest state (excluding the PR author).
+      // Track last decisive state to detect "approved then commented" (APPROVED_COMMENTED).
       const reviewerStates = new Map();
+      const reviewerLastDecisive = new Map();
       for (const review of (pr.reviews?.nodes || [])) {
         const login = review.author?.login;
         if (!login || login === pr.author?.login) continue;
+        if (review.state === 'APPROVED' || review.state === 'CHANGES_REQUESTED') {
+          reviewerLastDecisive.set(login, review.state);
+        }
         reviewerStates.set(login, review.state);
+      }
+      // Also surface human PR commenters who never submitted a formal review
+      for (const comment of (pr.comments?.nodes || [])) {
+        const login = comment.author?.login;
+        if (!login || login === pr.author?.login || !isHumanActor(comment.author)) continue;
+        if (!reviewerStates.has(login)) reviewerStates.set(login, 'COMMENTED');
+      }
+      // Promote COMMENTED → APPROVED_COMMENTED when reviewer previously approved
+      for (const [login, state] of reviewerStates) {
+        if (state === 'COMMENTED' && reviewerLastDecisive.get(login) === 'APPROVED') {
+          reviewerStates.set(login, 'APPROVED_COMMENTED');
+        }
       }
 
       // Add pending reviewers (requested but no review submitted yet)
