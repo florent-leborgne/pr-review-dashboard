@@ -1912,6 +1912,7 @@ async function searchPRs(searchQuery) {
                   author { login }
                   state
                   createdAt
+                  comments { totalCount }
                 }
               }
               comments(last: 10) {
@@ -1990,6 +1991,7 @@ async function searchMyPRs(searchQuery) {
                   author { login __typename }
                   state
                   createdAt
+                  comments { totalCount }
                 }
               }
               comments(last: 10) {
@@ -2257,8 +2259,9 @@ async function fetchMyPRs() {
     // Track last decisive state (APPROVED/CHANGES_REQUESTED) separately so we
     // can detect "approved then left a follow-up comment" (APPROVED_COMMENTED).
     const reviewerStates = new Map();
-    const reviewerLastDecisive = new Map();   // login → state
-    const reviewerLastDecisiveAt = new Map(); // login → ISO timestamp
+    const reviewerLastDecisive = new Map();       // login → state
+    const reviewerLastDecisiveAt = new Map();     // login → ISO timestamp
+    const reviewerApprovedWithComments = new Set(); // approved reviews that included inline comments
     for (const review of reviews) {
       const login = review.author?.login;
       if (!login || login === pr.author?.login) continue;
@@ -2266,10 +2269,13 @@ async function fetchMyPRs() {
         reviewerLastDecisive.set(login, review.state);
         reviewerLastDecisiveAt.set(login, review.createdAt);
       }
+      if (review.state === 'APPROVED' && (review.comments?.totalCount || 0) > 0) {
+        reviewerApprovedWithComments.add(login);
+      }
       reviewerStates.set(login, review.state);
     }
     // Surface PR commenters: add if no review yet, or promote APPROVED → APPROVED_COMMENTED
-    // if the comment came after the approval (covers formal review + inline PR comment).
+    // if the comment came after the approval (covers approval + standalone PR comment).
     for (const comment of comments) {
       const login = comment.author?.login;
       if (!login || login === pr.author?.login || !isHumanActor(comment.author)) continue;
@@ -2280,9 +2286,13 @@ async function fetchMyPRs() {
         reviewerStates.set(login, 'APPROVED_COMMENTED');
       }
     }
-    // Also promote review-based COMMENTED → APPROVED_COMMENTED (formal COMMENTED review after approval)
+    // Promote to APPROVED_COMMENTED when:
+    // - reviewer's last state is APPROVED but they had inline review comments, or
+    // - reviewer's last state is COMMENTED and they previously approved
     for (const [login, state] of reviewerStates) {
-      if (state === 'COMMENTED' && reviewerLastDecisive.get(login) === 'APPROVED') {
+      if (state === 'APPROVED' && reviewerApprovedWithComments.has(login)) {
+        reviewerStates.set(login, 'APPROVED_COMMENTED');
+      } else if (state === 'COMMENTED' && reviewerLastDecisive.get(login) === 'APPROVED') {
         reviewerStates.set(login, 'APPROVED_COMMENTED');
       }
     }
@@ -2458,8 +2468,9 @@ async function fetchPRs() {
       // Build a map of each reviewer's latest state (excluding the PR author).
       // Track last decisive state to detect "approved then commented" (APPROVED_COMMENTED).
       const reviewerStates = new Map();
-      const reviewerLastDecisive = new Map();   // login → state
-      const reviewerLastDecisiveAt = new Map(); // login → ISO timestamp
+      const reviewerLastDecisive = new Map();       // login → state
+      const reviewerLastDecisiveAt = new Map();     // login → ISO timestamp
+      const reviewerApprovedWithComments = new Set(); // approved reviews that included inline comments
       for (const review of (pr.reviews?.nodes || [])) {
         const login = review.author?.login;
         if (!login || login === pr.author?.login) continue;
@@ -2467,10 +2478,13 @@ async function fetchPRs() {
           reviewerLastDecisive.set(login, review.state);
           reviewerLastDecisiveAt.set(login, review.createdAt);
         }
+        if (review.state === 'APPROVED' && (review.comments?.totalCount || 0) > 0) {
+          reviewerApprovedWithComments.add(login);
+        }
         reviewerStates.set(login, review.state);
       }
       // Surface PR commenters: add if no review yet, or promote APPROVED → APPROVED_COMMENTED
-      // if the comment came after the approval (covers formal review + inline PR comment).
+      // if the comment came after the approval (covers approval + standalone PR comment).
       for (const comment of (pr.comments?.nodes || [])) {
         const login = comment.author?.login;
         if (!login || login === pr.author?.login || !isHumanActor(comment.author)) continue;
@@ -2481,9 +2495,13 @@ async function fetchPRs() {
           reviewerStates.set(login, 'APPROVED_COMMENTED');
         }
       }
-      // Also promote review-based COMMENTED → APPROVED_COMMENTED (formal COMMENTED review after approval)
+      // Promote to APPROVED_COMMENTED when:
+      // - reviewer's last state is APPROVED but they had inline review comments, or
+      // - reviewer's last state is COMMENTED and they previously approved
       for (const [login, state] of reviewerStates) {
-        if (state === 'COMMENTED' && reviewerLastDecisive.get(login) === 'APPROVED') {
+        if (state === 'APPROVED' && reviewerApprovedWithComments.has(login)) {
+          reviewerStates.set(login, 'APPROVED_COMMENTED');
+        } else if (state === 'COMMENTED' && reviewerLastDecisive.get(login) === 'APPROVED') {
           reviewerStates.set(login, 'APPROVED_COMMENTED');
         }
       }
