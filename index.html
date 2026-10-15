@@ -1123,15 +1123,21 @@
   }
 
   /* ── Mentions ──────────────────────────────────────── */
-  .pr-card.mention-new {
-    border-left-color: var(--gold-strong);
+  /* The left edge and the type icon show what the item is and where it stands. */
+  .pr-card.mention-new, .pr-card.mention-seen {
+    border-left-color: var(--mc, var(--text-dim));
     border-left-width: 4px;
     padding-left: 17px;
   }
+  .mc-pr-open { --mc: var(--green); }
+  .mc-pr-merged { --mc: var(--purple); }
+  .mc-pr-closed { --mc: var(--red); }
+  .mc-issue-open { --mc: var(--elastic-blue); }
+  .mc-issue-closed { --mc: var(--text-dim); }
   .pr-card.mention-seen { opacity: 0.55; }
   .pr-card.mention-seen:hover { opacity: 0.85; }
 
-  .mention-type { color: var(--text-dim); display: inline-flex; margin-right: 6px; align-self: center; }
+  .mention-type { color: var(--mc, var(--text-dim)); display: inline-flex; margin-right: 6px; align-self: center; }
   .mention-row { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; margin-top: 6px; }
   .mention-where { font-size: 12px; color: var(--text-muted); }
 
@@ -1161,9 +1167,30 @@
     overflow: hidden;
   }
   .mention-quote strong { color: var(--text); font-weight: 600; }
-  .mention-open { font-size: 12px; }
-  /* Sit at the bottom so the hover "mark as seen" button never covers the time. */
-  .mention-right { align-self: stretch; justify-content: flex-end; }
+  /* Two buttons of equal weight and width, stacked on the right of the card. */
+  .mention-right { align-self: stretch; justify-content: space-between; align-items: stretch; min-width: 124px; }
+  .mention-right .pr-updated { text-align: right; }
+  .mention-actions { display: flex; flex-direction: column; gap: 6px; }
+  .mention-btn {
+    display: block;
+    box-sizing: border-box;
+    width: 100%;
+    padding: 4px 12px;
+    font: inherit;
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 18px;
+    text-align: center;
+    text-decoration: none;
+    color: var(--text);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s;
+  }
+  .mention-btn:hover { background: var(--surface-hover); border-color: var(--text-dim); }
+  .mention-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 
   /* ── Settings dialog ───────────────────────────────── */
   dialog.settings-dialog {
@@ -1435,7 +1462,8 @@
       <div class="toolbar">
         <div class="filter-tabs" id="mention-filter-tabs">
           <button class="filter-tab active" data-filter="all">All <span class="count" id="mcount-all">0</span></button>
-          <button class="filter-tab" data-filter="tag">Tagged you or your teams <span class="count" id="mcount-tag">0</span></button>
+          <button class="filter-tab" data-filter="user">Tagged you <span class="count" id="mcount-user">0</span></button>
+          <button class="filter-tab" data-filter="team">Tagged your teams <span class="count" id="mcount-team">0</span></button>
           <button class="filter-tab" data-filter="reply">Replies to you <span class="count" id="mcount-reply">0</span></button>
         </div>
       </div>
@@ -3225,7 +3253,7 @@ let mentionsLoaded = false;
 let mentionsFetchFailed = false;
 let mentionsFetching = false;
 let mentionsRefetchQueued = false;
-let currentMentionFilter = 'all'; // 'all' | 'tag' | 'reply'
+let currentMentionFilter = 'all'; // 'all' | 'user' | 'team' | 'reply'
 let mentionsSeenExpanded = false;
 
 function getMentionsWindowDays() {
@@ -3562,8 +3590,15 @@ function computeMentionView() {
     entries.push({ item: it, events: shown, latestAt, seen: !!seenMap[it.key] && seenMap[it.key] >= latestAt });
   }
 
+  // A tag can name you and a team at once. It then counts under both tag filters.
+  const matchesKind = (e, kind) => {
+    if (kind === 'all') return true;
+    if (kind === 'reply') return e.type === 'reply';
+    if (e.type !== 'tag') return false;
+    return kind === 'user' ? e.via.includes('direct') : e.via.some(v => v !== 'direct' && !hidden.includes(v));
+  };
   const byKind = kind => entries
-    .map(en => ({ ...en, events: kind === 'all' ? en.events : en.events.filter(e => e.type === kind) }))
+    .map(en => ({ ...en, events: en.events.filter(e => matchesKind(e, kind)) }))
     .filter(en => en.events.length > 0);
   const unseenCount = kind => byKind(kind).filter(en => !en.seen).length;
 
@@ -3571,7 +3606,7 @@ function computeMentionView() {
   return {
     unseen: list.filter(en => !en.seen),
     seen: list.filter(en => en.seen),
-    counts: { all: unseenCount('all'), tag: unseenCount('tag'), reply: unseenCount('reply') },
+    counts: { all: unseenCount('all'), user: unseenCount('user'), team: unseenCount('team'), reply: unseenCount('reply') },
   };
 }
 
@@ -3596,15 +3631,18 @@ function renderMentionCard(en) {
   const stateLabel = it.state === 'MERGED' ? 'Merged' : it.state === 'CLOSED' ? 'Closed' : '';
   const key = escapeHtml(it.key);
   const actionBtn = en.seen
-    ? `<button class="pr-dismiss" style="opacity:1;" onclick="restoreMention('${key}')" title="Restore" aria-label="Restore">${octicon('arrow-undo', 12)}</button>`
-    : `<button class="pr-dismiss" onclick="markMentionSeen('${key}', '${escapeHtml(en.latestAt)}')" title="Mark as seen. It comes back if something newer happens." aria-label="Mark as seen">${octicon('x', 12)}</button>`;
+    ? `<button type="button" class="mention-btn" onclick="restoreMention('${key}')" title="Move this back to your list">Restore</button>`
+    : `<button type="button" class="mention-btn" onclick="markMentionSeen('${key}', '${escapeHtml(en.latestAt)}')" title="Dismiss this mention. It comes back if something newer happens.">Dismiss</button>`;
+  const kindOfItem = it.type === 'pr' ? 'pull request' : 'issue';
+  const stateKey = it.state === 'MERGED' ? 'merged' : it.state === 'CLOSED' ? 'closed' : 'open';
+  const colorClass = `mc-${it.type === 'pr' ? 'pr' : 'issue'}-${stateKey}`;
+  const typeTitle = `${stateKey[0].toUpperCase()}${stateKey.slice(1)} ${kindOfItem}`;
 
   return `
-    <li class="pr-card ${en.seen ? 'mention-seen' : 'mention-new'}">
-      ${actionBtn}
+    <li class="pr-card ${en.seen ? 'mention-seen' : 'mention-new'} ${colorClass}">
       <div class="pr-body">
         <div class="pr-title-row">
-          <span class="mention-type">${mentionTypeIcon(it)}</span><span class="pr-number">#${it.number}</span><a class="pr-title" href="${escapeHtml(it.url)}" target="_blank" rel="noopener">${escapeHtml(it.title)}</a>
+          <span class="mention-type" title="${typeTitle}" aria-label="${typeTitle}">${mentionTypeIcon(it)}</span><span class="pr-number">#${it.number}</span><a class="pr-title" href="${escapeHtml(it.url)}" target="_blank" rel="noopener">${escapeHtml(it.title)}</a>
         </div>
         <div class="mention-row">
           <span class="mention-kind ${e.type === 'reply' ? 'reply' : 'tag'}">${kindIcon} ${escapeHtml(kindLabel)}</span>
@@ -3616,7 +3654,10 @@ function renderMentionCard(en) {
       </div>
       <div class="pr-right mention-right">
         <div class="pr-updated">${timeAgo(e.at)}</div>
-        <a class="mention-open" href="${escapeHtml(e.url)}" target="_blank" rel="noopener">Open comment</a>
+        <div class="mention-actions">
+          <a class="mention-btn" href="${escapeHtml(e.url)}" target="_blank" rel="noopener">Open comment</a>
+          ${actionBtn}
+        </div>
       </div>
     </li>`;
 }
@@ -3655,7 +3696,8 @@ function renderMentions() {
   countEl.textContent = view.counts.all;
   countEl.className = `view-tab-count${view.counts.all > 0 ? ' has-attention' : ''}`;
   document.getElementById('mcount-all').textContent = view.counts.all;
-  document.getElementById('mcount-tag').textContent = view.counts.tag;
+  document.getElementById('mcount-user').textContent = view.counts.user;
+  document.getElementById('mcount-team').textContent = view.counts.team;
   document.getElementById('mcount-reply').textContent = view.counts.reply;
 
   const days = getMentionsWindowDays();

@@ -31,9 +31,10 @@ GitHub's built-in search can tell you which PRs you're "involved" in, but can't 
 ### Mentions tab
 - **Tags**: Finds issues and PRs where someone wrote `@you` or `@org/team` for one of your tracked teams, in a description, a comment, a review, or a review comment. Tags inside code blocks, inline code, and quoted lines don't count.
 - **Replies**: Finds replies to your review comments, in review threads that are still unresolved. A flat comment on the same issue or PR doesn't count as a reply unless it tags you or your team.
-- **Filters**: Switch between all mentions, tags only, and replies only.
+- **Filters**: Switch between all mentions, **Tagged you**, **Tagged your teams**, and **Replies to you**. A comment that tags you and a team counts under both tag filters.
+- **Color-coded cards**: The left edge and the icon show what the mention is on and where it stands: green for an open PR, purple for a merged PR, red for a closed PR, blue for an open issue, and gray for a closed issue. Hover the icon for the exact state.
 - **Clears when you answer**: A mention leaves the list when you post on the same issue or PR after it.
-- **Mark as seen**: Select the close button on a card to dim it. A newer mention on the same item brings it back.
+- **Open or dismiss**: Each card has two buttons of equal weight. **Open comment** jumps to the exact comment on GitHub. **Dismiss** dims the card and moves it to the seen list, where **Restore** brings it back. A newer mention on the same item also brings it back.
 - **No duplicates with My PRs**: Mentions on your own open PRs are hidden because the **My PRs** tab already flags responses from others. Mentions on PRs in **Review requests** are still shown.
 - **Respects your teams bar**: Muted and excluded teams don't produce mentions, and bot accounts are ignored.
 - **Limitation**: Discussions aren't covered yet. The GitHub search API doesn't return them for the `mentions:` qualifier.
