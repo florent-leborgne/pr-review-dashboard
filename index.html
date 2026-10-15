@@ -1123,17 +1123,11 @@
   }
 
   /* ── Mentions ──────────────────────────────────────── */
-  /* The left edge and the type icon show what the item is and where it stands. */
-  .pr-card.mention-new, .pr-card.mention-seen {
-    border-left-color: var(--mc, var(--text-dim));
-    border-left-width: 4px;
-    padding-left: 17px;
-  }
-  .mc-pr-open { --mc: var(--green); }
-  .mc-pr-merged { --mc: var(--purple); }
-  .mc-pr-closed { --mc: var(--red); }
-  .mc-issue-open { --mc: var(--elastic-blue); }
-  .mc-issue-closed { --mc: var(--text-dim); }
+  /* Open items keep the default card edge. A merged or closed item colors its edge and icon. */
+  .pr-card.mc-merged { border-left-color: var(--purple); border-left-width: 4px; padding-left: 17px; }
+  .pr-card.mc-closed { border-left-color: var(--red); border-left-width: 4px; padding-left: 17px; }
+  .mc-merged { --mc: var(--purple); }
+  .mc-closed { --mc: var(--red); }
   .pr-card.mention-seen { opacity: 0.55; }
   .pr-card.mention-seen:hover { opacity: 0.85; }
 
@@ -1151,8 +1145,10 @@
     border-radius: 10px;
     white-space: nowrap;
   }
-  .mention-kind.tag { background: var(--badge-blue-bg); color: var(--elastic-blue); box-shadow: inset 0 0 0 1px var(--badge-blue-border); }
-  .mention-kind.reply { background: var(--badge-purple-bg); color: var(--purple); }
+  /* Same colors as the teams bar and reviewer chips: teal for you, blue for a team, neutral for a comment. */
+  .mention-kind.user { background: var(--badge-accent-bg); color: var(--accent); }
+  .mention-kind.team { background: var(--badge-blue-bg); color: var(--elastic-blue); box-shadow: inset 0 0 0 1px var(--badge-blue-border); }
+  .mention-kind.reply { background: var(--badge-muted-bg); color: var(--text-muted); }
 
   .mention-quote {
     margin-top: 8px;
@@ -1505,6 +1501,9 @@ let currentView = 'review';
 /* ── Octicons (GitHub's Primer SVG paths) ─────────────── */
 const OCTICONS = {
   // Branding / status
+  'git-merge': 'M5.45 5.154A4.25 4.25 0 0 0 9.25 7.5h1.378a2.251 2.251 0 1 1 0 1.5H9.25A5.734 5.734 0 0 1 5 7.123v3.505a2.25 2.25 0 1 1-1.5 0V5.372a2.25 2.25 0 1 1 1.95-.218ZM4.25 13.5a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5Zm8.5-4.5a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5ZM5 3.25a.75.75 0 1 0 0 .005V3.25Z',
+  'git-pull-request-closed': 'M3.25 1A2.25 2.25 0 0 1 4 5.372v5.256a2.251 2.251 0 1 1-1.5 0V5.372A2.251 2.251 0 0 1 3.25 1Zm9.5 5.5a.75.75 0 0 1 .75.75v3.378a2.251 2.251 0 1 1-1.5 0V7.25a.75.75 0 0 1 .75-.75Zm-2.03-5.273a.75.75 0 0 1 1.06 0l.97.97.97-.97a.748.748 0 0 1 1.265.332.75.75 0 0 1-.205.729l-.97.97.97.97a.751.751 0 0 1-.018 1.042.751.751 0 0 1-1.042.018l-.97-.97-.97.97a.749.749 0 0 1-1.275-.326.749.749 0 0 1 .215-.734l.97-.97-.97-.97a.75.75 0 0 1 0-1.06ZM2.5 3.25a.75.75 0 1 0 1.5 0 .75.75 0 0 0-1.5 0ZM3.25 12a.75.75 0 1 0 0 1.5.75.75 0 0 0 0-1.5Zm9.5 0a.75.75 0 1 0 0 1.5.75.75 0 0 0 0-1.5Z',
+  'issue-closed': 'M11.28 6.78a.75.75 0 0 0-1.06-1.06L7.25 8.69 5.78 7.22a.75.75 0 0 0-1.06 1.06l2 2a.75.75 0 0 0 1.06 0l3.5-3.5ZM16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0Zm-1.5 0a6.5 6.5 0 1 0-13 0 6.5 6.5 0 0 0 13 0Z',
   'git-pull-request': 'M1.5 3.25a2.25 2.25 0 1 1 3 2.122v5.256a2.251 2.251 0 1 1-1.5 0V5.372A2.25 2.25 0 0 1 1.5 3.25Zm5.677-.177L9.573.677A.25.25 0 0 1 10 .854V2.5h1A2.5 2.5 0 0 1 13.5 5v5.628a2.251 2.251 0 1 1-1.5 0V5a1 1 0 0 0-1-1h-1v1.646a.25.25 0 0 1-.427.177L7.177 3.427a.25.25 0 0 1 0-.354ZM3.75 2.5a.75.75 0 1 0 0 1.5.75.75 0 0 0 0-1.5Zm0 9.5a.75.75 0 1 0 0 1.5.75.75 0 0 0 0-1.5Zm8.25.75a.75.75 0 1 0 1.5 0 .75.75 0 0 0-1.5 0Z',
   // Header actions
   gear: 'M8 0a8.2 8.2 0 0 1 .701.031C9.444.095 9.99.645 10.16 1.29l.288 1.107c.018.066.079.158.212.224.231.114.454.243.668.386.123.082.233.09.299.071l1.103-.303c.644-.176 1.392.021 1.82.63.27.385.506.792.704 1.218.315.675.111 1.422-.364 1.891l-.814.806c-.049.048-.098.147-.088.294a6.1 6.1 0 0 1 0 .772c-.01.147.04.246.088.294l.814.806c.475.469.679 1.216.364 1.891a7.977 7.977 0 0 1-.704 1.217c-.428.61-1.176.807-1.82.63l-1.103-.303c-.066-.019-.176-.011-.299.071a5.991 5.991 0 0 1-.668.386c-.133.066-.194.158-.212.224l-.288 1.107c-.17.645-.716 1.195-1.459 1.26a8.006 8.006 0 0 1-1.402 0c-.743-.065-1.289-.615-1.459-1.26l-.289-1.107c-.017-.066-.078-.158-.211-.224a5.99 5.99 0 0 1-.668-.386c-.123-.082-.233-.09-.3-.071l-1.102.303c-.644.177-1.392-.02-1.82-.63a7.968 7.968 0 0 1-.704-1.217c-.315-.675-.111-1.422.363-1.891l.815-.806c.049-.048.098-.147.088-.294a6.1 6.1 0 0 1 0-.772c.01-.147-.04-.246-.088-.294l-.815-.806C.635 6.045.431 5.298.746 4.623a7.92 7.92 0 0 1 .704-1.217c.428-.61 1.176-.807 1.82-.63l1.103.303c.066.019.176.011.299-.071.214-.143.437-.272.668-.386.133-.066.194-.158.212-.224L5.84 1.29c.17-.645.716-1.195 1.459-1.26A8.2 8.2 0 0 1 8 0ZM8 5a3 3 0 1 0 0 6 3 3 0 0 0 0-6Z',
@@ -3615,8 +3614,14 @@ function getMentionSummary() {
   return { unseen: computeMentionView().counts.all };
 }
 
+// The icon repeats the state, so the edge color is never the only cue.
 function mentionTypeIcon(it) {
-  return it.type === 'pr' ? octicon('git-pull-request', 14) : octicon('comment', 14);
+  if (it.type === 'pr') {
+    if (it.state === 'MERGED') return octicon('git-merge', 14);
+    if (it.state === 'CLOSED') return octicon('git-pull-request-closed', 14);
+    return octicon('git-pull-request', 14);
+  }
+  return it.state === 'CLOSED' ? octicon('issue-closed', 14) : octicon('comment', 14);
 }
 
 function renderMentionCard(en) {
@@ -3627,15 +3632,15 @@ function renderMentionCard(en) {
   const kindLabel = e.type === 'reply'
     ? 'Replied to your comment'
     : e.via.includes('direct') ? 'Tagged you' : `Tagged @${teams.join(', @')}`;
+  const kindClass = e.type === 'reply' ? 'reply' : e.via.includes('direct') ? 'user' : 'team';
   const kindIcon = e.type === 'reply' ? octicon('comment', 12) : octicon('bell', 12);
-  const stateLabel = it.state === 'MERGED' ? 'Merged' : it.state === 'CLOSED' ? 'Closed' : '';
   const key = escapeHtml(it.key);
   const actionBtn = en.seen
     ? `<button type="button" class="mention-btn" onclick="restoreMention('${key}')" title="Move this back to your list">Restore</button>`
     : `<button type="button" class="mention-btn" onclick="markMentionSeen('${key}', '${escapeHtml(en.latestAt)}')" title="Dismiss this mention. It comes back if something newer happens.">Dismiss</button>`;
   const kindOfItem = it.type === 'pr' ? 'pull request' : 'issue';
   const stateKey = it.state === 'MERGED' ? 'merged' : it.state === 'CLOSED' ? 'closed' : 'open';
-  const colorClass = `mc-${it.type === 'pr' ? 'pr' : 'issue'}-${stateKey}`;
+  const colorClass = stateKey === 'open' ? '' : `mc-${stateKey}`;
   const typeTitle = `${stateKey[0].toUpperCase()}${stateKey.slice(1)} ${kindOfItem}`;
 
   return `
@@ -3645,10 +3650,9 @@ function renderMentionCard(en) {
           <span class="mention-type" title="${typeTitle}" aria-label="${typeTitle}">${mentionTypeIcon(it)}</span><span class="pr-number">#${it.number}</span><a class="pr-title" href="${escapeHtml(it.url)}" target="_blank" rel="noopener">${escapeHtml(it.title)}</a>
         </div>
         <div class="mention-row">
-          <span class="mention-kind ${e.type === 'reply' ? 'reply' : 'tag'}">${kindIcon} ${escapeHtml(kindLabel)}</span>
+          <span class="mention-kind ${kindClass}">${kindIcon} ${escapeHtml(kindLabel)}</span>
           <span class="mention-where">${escapeHtml(e.where)}</span>
           ${more > 0 ? `<span class="mention-where">+${more} more</span>` : ''}
-          ${stateLabel ? `<span class="pr-label">${stateLabel}</span>` : ''}
         </div>
         <div class="mention-quote"><strong>@${escapeHtml(e.author)}</strong> ${escapeHtml(e.snippet)}</div>
       </div>
