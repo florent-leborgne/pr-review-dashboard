@@ -35,7 +35,8 @@ GitHub's built-in search can tell you which PRs you're "involved" in, but can't 
 - **Merged and closed items stand out**: Open items keep the default card edge. A merged PR gets a purple edge and a merge icon. A closed PR or issue gets a red edge and a closed icon. Hover the icon for the exact state.
 - **Familiar chip colors**: The tag and reply chips reuse the colors from the rest of the dashboard: teal for you, blue for a team, and gray for a reply.
 - **Clears when you answer**: A mention leaves the list when you post on the same issue or PR after it.
-- **Open or dismiss**: Each card has two buttons of equal weight. **Open comment** jumps to the exact comment on GitHub. **Dismiss** dims the card and moves it to the seen list, where **Restore** brings it back. A newer mention on the same item also brings it back.
+- **Open or dismiss**: Each card has two buttons of equal weight. **Open comment** (top) jumps to the exact comment on GitHub. **Dismiss** (bottom) dims the card and moves it to the seen list, where **Restore** brings it back. The time of the mention appears right after the tag or reply chip.
+- **Dismissed stays dismissed**: A dismissed mention comes back only for a new comment that tags you, a new reply, or a description that now tags someone else. Editing a description that tags you, for example when someone ticks a checkbox in a tracking issue, doesn't bring it back.
 - **No duplicates with My PRs**: Mentions on your own open PRs are hidden because the **My PRs** tab already flags responses from others. Mentions on PRs in **Review requests** are still shown.
 - **Respects your teams bar**: Muted and excluded teams don't produce mentions, and bot accounts are ignored.
 - **Limitation**: Discussions aren't covered yet. The GitHub search API doesn't return them for the `mentions:` qualifier.
@@ -49,6 +50,7 @@ GitHub's built-in search can tell you which PRs you're "involved" in, but can't 
 - **Light & dark theme**: Light theme by default, with a toggle to switch to dark mode (persisted)
 - **Accessible label colors**: Label colors are automatically adjusted for contrast based on the active theme
 - **Auto-refreshes** every 5 minutes (configurable)
+- **Parallel loading**: Review requests, My PRs, and Mentions load at the same time, and each tab appears as soon as its own data is ready. The Mentions tab also shows its last result right away on your next visit while fresh data loads.
 - **Zero dependencies**: Single HTML file, no build step, no server
 
 ## Usage
@@ -124,9 +126,9 @@ Mentions use two steps to stay within GitHub's rate limits.
    - `team:ORG/TEAM` for items that tag one of your teams, one query per tracked team
 
    Each search is limited to items updated inside your mentions time window.
-2. **Load details only for items that changed.** The dashboard remembers the update time of each item while the page is open. It requests comments and review threads only for IDs whose update time changed since the last refresh.
+2. **Load details only for items that changed.** The dashboard saves the update time of each item in your browser. It requests comments and review threads only for IDs whose update time changed since the last refresh, in small batches that run in parallel. An issue you only commented on is skipped, because replies exist only in PR review threads.
 
-The dashboard then finds tags and replies in the loaded text. It reads the last 20 comments of each item and the last 30 review threads (the first 10 comments of each thread), so a very long conversation can hide older events. A description tag uses the time of the last edit, so editing a description that tags you can bring the mention back.
+The dashboard then finds tags and replies in the loaded text. It reads the last 20 comments of each item and the last 30 review threads (the first 10 comments of each thread), so a very long conversation can hide older events. A description tag shows the time of the last edit. Dismissing a mention saves which comments and tags you dismissed, not a time, so later edits of the same description don't bring it back.
 
 ## Privacy
 

@@ -1163,29 +1163,35 @@
     overflow: hidden;
   }
   .mention-quote strong { color: var(--text); font-weight: 600; }
-  /* Two buttons of equal weight and width, stacked on the right of the card. */
-  .mention-right { align-self: stretch; justify-content: space-between; align-items: stretch; min-width: 124px; }
-  .mention-right .pr-updated { text-align: right; }
-  .mention-actions { display: flex; flex-direction: column; gap: 6px; }
+  /* Two buttons of equal weight and size: Open comment at the top, Dismiss at the bottom. */
+  .mention-time { font-size: 12px; color: var(--text-dim); white-space: nowrap; }
+  .mention-time + .mention-where::before { content: "\00b7\00a0"; color: var(--text-dim); }
+  .mention-right { align-self: stretch; justify-content: space-between; align-items: stretch; min-width: 132px; gap: 8px; }
   .mention-btn {
-    display: block;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
     box-sizing: border-box;
     width: 100%;
-    padding: 4px 12px;
+    padding: 5px 12px;
     font: inherit;
     font-size: 12px;
     font-weight: 500;
     line-height: 18px;
-    text-align: center;
     text-decoration: none;
     color: var(--text);
     background: var(--surface);
     border: 1px solid var(--border);
     border-radius: 6px;
     cursor: pointer;
-    transition: background 0.15s, border-color 0.15s;
+    transition: background 0.15s, border-color 0.15s, color 0.15s;
   }
-  .mention-btn:hover { background: var(--surface-hover); border-color: var(--text-dim); }
+  .mention-btn .octicon { color: var(--text-muted); transition: color 0.15s; }
+  .mention-btn:hover { background: var(--surface-hover); border-color: var(--text-dim); text-decoration: none; }
+  .mention-btn:hover .octicon { color: var(--text); }
+  .mention-btn-open:hover { border-color: var(--accent); color: var(--accent-deep); }
+  .mention-btn-open:hover .octicon { color: var(--accent-deep); }
   .mention-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 
   /* ── Settings dialog ───────────────────────────────── */
@@ -1489,7 +1495,7 @@
 </footer>
 
 <script>
-const STORAGE_KEYS = { token: 'prd_token', user: 'prd_user', teams: 'prd_teams', theme: 'prd_theme', dismissed: 'prd_dismissed', collapsedRepos: 'prd_collapsed_repos', collapsedMyRepos: 'prd_collapsed_my_repos', mutedTeams: 'prd_muted_teams', botLogins: 'prd_bot_logins', showDrafts: 'prd_show_drafts', draftMode: 'prd_draft_mode', view: 'prd_view', teamsBarCollapsed: 'prd_teams_bar_collapsed', excludedTeams: 'prd_excluded_teams', mentionsSeen: 'prd_mentions_seen', mentionsWindow: 'prd_mentions_window_days' };
+const STORAGE_KEYS = { token: 'prd_token', user: 'prd_user', teams: 'prd_teams', theme: 'prd_theme', dismissed: 'prd_dismissed', collapsedRepos: 'prd_collapsed_repos', collapsedMyRepos: 'prd_collapsed_my_repos', mutedTeams: 'prd_muted_teams', botLogins: 'prd_bot_logins', showDrafts: 'prd_show_drafts', draftMode: 'prd_draft_mode', view: 'prd_view', teamsBarCollapsed: 'prd_teams_bar_collapsed', excludedTeams: 'prd_excluded_teams', mentionsSeen: 'prd_mentions_seen', mentionsWindow: 'prd_mentions_window_days', mentionsCache: 'prd_mentions_cache' };
 const DEFAULT_BOT_LOGINS = ['elasticmachine', 'macroscopeapp'];
 let allPRs = [];
 let currentFilter = 'all';
@@ -1526,6 +1532,7 @@ const OCTICONS = {
   // Chevrons
   'chevron-down': 'M12.78 5.22a.749.749 0 0 1 0 1.06l-4.25 4.25a.749.749 0 0 1-1.06 0L3.22 6.28a.749.749 0 1 1 1.06-1.06L8 8.939l3.72-3.719a.749.749 0 0 1 1.06 0Z',
   'chevron-right': 'M6.22 3.22a.75.75 0 0 1 1.06 0l4.25 4.25a.75.75 0 0 1 0 1.06l-4.25 4.25a.749.749 0 0 1-1.275-.326.749.749 0 0 1 .215-.734L9.94 8 6.22 4.28a.75.75 0 0 1 0-1.06Z',
+  'link-external': 'M3.75 2h3.5a.75.75 0 0 1 0 1.5h-3.5a.25.25 0 0 0-.25.25v8.5c0 .138.112.25.25.25h8.5a.25.25 0 0 0 .25-.25v-3.5a.75.75 0 0 1 1.5 0v3.5A1.75 1.75 0 0 1 12.25 14h-8.5A1.75 1.75 0 0 1 2 12.25v-8.5C2 2.784 2.784 2 3.75 2Zm6.854-1h4.146a.25.25 0 0 1 .25.25v4.146a.25.25 0 0 1-.427.177L13.03 4.03 9.28 7.78a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042l3.75-3.75-1.543-1.543A.25.25 0 0 1 10.604 1Z',
   'arrow-undo': 'M1.22 6.28a.749.749 0 0 1 0-1.06l3.5-3.5a.749.749 0 1 1 1.06 1.06L3.561 5h7.188l.001.007L10.749 5C12.683 5 14 6.317 14 8.25v4a.75.75 0 0 1-1.5 0v-4c0-1.105-.645-1.75-1.75-1.75H3.561l2.22 2.22a.749.749 0 1 1-1.061 1.06Z',
   alert: 'M6.457 1.047c.659-1.234 2.427-1.234 3.086 0l6.082 11.378A1.75 1.75 0 0 1 14.082 15H1.918a1.75 1.75 0 0 1-1.543-2.575Zm1.763.707a.25.25 0 0 0-.44 0L1.698 13.132a.25.25 0 0 0 .22.368h12.164a.25.25 0 0 0 .22-.368Zm.53 3.996v2.5a.75.75 0 0 1-1.5 0v-2.5a.75.75 0 0 1 1.5 0ZM9 11a1 1 0 1 1-2 0 1 1 0 0 1 2 0Z',
   bell: 'M8 16a2 2 0 0 0 1.985-1.75c.017-.137-.097-.25-.235-.25h-3.5c-.138 0-.252.113-.235.25A2 2 0 0 0 8 16ZM3 5a5 5 0 0 1 10 0v2.947c0 .05.015.098.042.139l1.703 2.555A1.519 1.519 0 0 1 13.482 13H2.518a1.516 1.516 0 0 1-1.263-2.36l1.703-2.554A.255.255 0 0 0 3 7.947Zm5-3.5A3.5 3.5 0 0 0 4.5 5v2.947c0 .346-.102.683-.294.97l-1.703 2.556a.017.017 0 0 0-.003.01l.001.006c0 .002.002.004.004.006l.006.004.007.001h10.964l.007-.001.006-.004.004-.006.001-.007a.017.017 0 0 0-.003-.01l-1.703-2.554a1.745 1.745 0 0 1-.294-.97V5A3.5 3.5 0 0 0 8 1.5Z',
@@ -1768,6 +1775,8 @@ function showDashboard() {
   setupDraftToggle();
   const storedView = localStorage.getItem(STORAGE_KEYS.view);
   const savedView = ['review', 'my-prs', 'mentions'].includes(storedView) ? storedView : 'review';
+  loadMentionCache(); // show the last mentions right away while fresh data loads
+  renderMentions();
   switchView(savedView);
   fetchTeamsThenPRs();
   setupAutoRefresh();
@@ -2402,7 +2411,7 @@ function addBotLogin() {
     if (!stored.includes(login)) saveBotLogins([...stored, login]);
   } catch { saveBotLogins([...DEFAULT_BOT_LOGINS, login]); }
   renderBotFilter();
-  mentionCache.clear(); // rebuild mentions with the new bot list on the next refresh
+  clearMentionCache(); // rebuild mentions with the new bot list on the next refresh
   if (input) input.value = '';
 }
 
@@ -2412,7 +2421,7 @@ function removeBotLogin(login) {
     saveBotLogins(stored.filter(l => l !== login));
   } catch { saveBotLogins(DEFAULT_BOT_LOGINS.filter(l => l !== login)); }
   renderBotFilter();
-  mentionCache.clear();
+  clearMentionCache();
 }
 
 // Returns true only for real human GitHub accounts.
@@ -2594,6 +2603,8 @@ async function fetchMyPRs() {
     };
   }).filter(pr => !pr.repository?.isArchived);
 
+  myPRsLoadedOnce = true;
+
   // PRs needing attention first, then most-recently-updated
   myOwnPRs.sort((a, b) => {
     if (a.needsAttention !== b.needsAttention) return a.needsAttention ? -1 : 1;
@@ -2643,17 +2654,30 @@ async function fetchPRs() {
     }
 
     setLoadingState('Loading pull requests...', `Running ${queries.length} search${queries.length > 1 ? 'es' : ''}...`);
+    if (!myPRsLoadedOnce) {
+      document.getElementById('my-pr-container').innerHTML = '<div class="loading"><div class="spinner"></div><br>Loading your pull requests...</div>';
+    }
 
-    // Run review searches and "My PRs" searches in parallel
-    const [results] = await Promise.all([
-      Promise.all(
-        queries.map(q => searchPRs(q.query).catch(err => {
-          console.warn(`Search failed for "${q.label}":`, err);
-          return null; // null = failed, [] = genuinely empty
-        }))
-      ),
-      fetchMyPRs().catch(err => console.warn('My PRs fetch failed:', err))
-    ]);
+    // The three tabs load in parallel, and each one shows up as soon as its own data is ready.
+    // My PRs is usually first, because it needs only two searches.
+    const myPromise = fetchMyPRs()
+      .catch(err => console.warn('My PRs fetch failed:', err))
+      .then(() => {
+        renderMyPRs();
+        updateHero();
+        if (mentionsLoaded) renderMentions(); // the My PRs overlap rule needs this list
+      });
+    myPRsReady = myPromise;
+    refreshMentions();
+
+    const results = await Promise.all(
+      queries.map(q => searchPRs(q.query).catch(err => {
+        console.warn(`Search failed for "${q.label}":`, err);
+        return null; // null = failed, [] = genuinely empty
+      }))
+    );
+    // Review requests skip PRs that are in My PRs, so wait for that list before merging.
+    await myPromise;
 
     // If every review search errored out, preserve existing data.
     if (results.every(r => r === null)) {
@@ -2830,9 +2854,6 @@ async function fetchPRs() {
     renderMentions();
     document.getElementById('status-text').textContent = `Updated ${new Date().toLocaleTimeString()}`;
     updateHero();
-
-    // Mentions load in the background so they never delay review requests and My PRs.
-    refreshMentions();
 
   } catch (e) {
     errContainer.innerHTML = `<div class="error-msg">${octicon('alert', 14)} Failed to fetch PRs: ${escapeHtml(e.message)}</div>`;
@@ -3254,6 +3275,49 @@ let mentionsFetching = false;
 let mentionsRefetchQueued = false;
 let currentMentionFilter = 'all'; // 'all' | 'user' | 'team' | 'reply'
 let mentionsSeenExpanded = false;
+let myPRsReady = Promise.resolve();   // resolves when the latest My PRs fetch ends
+let myPRsLoadedOnce = false;
+let cachedMyKeys = new Set();         // My PRs from the last session, used until the fresh list arrives
+let mentionCacheSig = '';             // which teams and bot list the cached items were built with
+
+// The cached items depend on your teams and the bot list, so a change in either rebuilds them.
+function mentionSignature() {
+  const bots = (() => { try { return JSON.parse(localStorage.getItem(STORAGE_KEYS.botLogins) ?? 'null') ?? DEFAULT_BOT_LOGINS; } catch { return DEFAULT_BOT_LOGINS; } })();
+  return JSON.stringify([userTeams.map(t => t.qualified).sort(), [...bots].sort()]);
+}
+
+function clearMentionCache() {
+  mentionCache.clear();
+  localStorage.removeItem(STORAGE_KEYS.mentionsCache);
+}
+
+// Keep the last result so the Mentions tab can show it right away on the next visit.
+function saveMentionCache() {
+  try {
+    const entries = [...mentionCache.entries()].map(([id, v]) => [id, v.updatedAt, v.item]);
+    const myKeys = myPRsLoadedOnce ? myOwnPRs.map(pr => prKey(pr)) : [...cachedMyKeys];
+    localStorage.setItem(STORAGE_KEYS.mentionsCache, JSON.stringify({
+      v: 1, user: localStorage.getItem(STORAGE_KEYS.user), sig: mentionCacheSig, myKeys, entries,
+    }));
+  } catch (e) {
+    console.warn('Could not save the mentions cache:', e);
+  }
+}
+
+function loadMentionCache() {
+  try {
+    const raw = JSON.parse(localStorage.getItem(STORAGE_KEYS.mentionsCache) || 'null');
+    if (!raw || raw.v !== 1 || raw.user !== localStorage.getItem(STORAGE_KEYS.user)) return;
+    mentionCache.clear();
+    for (const [id, updatedAt, item] of raw.entries) mentionCache.set(id, { updatedAt, item });
+    mentionItems = raw.entries.map(e => e[2]).filter(Boolean);
+    mentionCacheSig = raw.sig || '';
+    cachedMyKeys = new Set(raw.myKeys || []);
+    mentionsLoaded = true;
+  } catch (e) {
+    console.warn('Could not read the mentions cache:', e);
+  }
+}
 
 function getMentionsWindowDays() {
   const n = parseInt(localStorage.getItem(STORAGE_KEYS.mentionsWindow) || '', 10);
@@ -3274,11 +3338,29 @@ function getMentionsSeen() {
   catch { return {}; }
 }
 
-// Seen state stores the timestamp of the newest event at the time you marked it.
-// The item comes back when something newer happens, like Dismiss on review requests.
-function markMentionSeen(key, latestAt) {
+// Seen state remembers which events you dismissed, not when. Each event has a signature:
+// a comment or reply uses its URL, and a description tag uses "desc:" plus who it tags.
+// Editing a description (a ticked checkbox, for example) keeps the same signature, so it
+// stays dismissed. A new comment, or a description that now tags someone else, does not.
+// Older saved values are a timestamp. They still work, and they treat description tags as seen.
+function eventSig(e) {
+  return e.sig || `${e.type}|${e.where}|${e.at}`;
+}
+
+function isMentionSeen(seenValue, events) {
+  if (!seenValue) return false;
+  if (typeof seenValue === 'string') {
+    return events.every(e => eventSig(e).startsWith('desc:') || e.at <= seenValue);
+  }
+  const known = new Set(seenValue.sigs || []);
+  return events.every(e => known.has(eventSig(e)));
+}
+
+function markMentionSeen(key) {
+  const item = mentionItems.find(it => it.key === key);
+  if (!item) return;
   const seen = getMentionsSeen();
-  seen[key] = latestAt;
+  seen[key] = { at: new Date().toISOString(), sigs: item.events.map(eventSig) };
   localStorage.setItem(STORAGE_KEYS.mentionsSeen, JSON.stringify(seen));
   renderMentions();
   updateHero();
@@ -3365,16 +3447,18 @@ function deriveMentionItem(node, me, matchers) {
   const events = [];
   const myTimes = [];
 
-  const addTag = (text, at, url, author, where) => {
+  const addTag = (text, at, url, author, where, sig) => {
     const { via, line } = findTags(text, matchers);
     if (via.length === 0) return;
-    events.push({ type: 'tag', via, where, author: author.login, snippet: makeSnippet(line), at, url });
+    events.push({ type: 'tag', via, where, author: author.login, snippet: makeSnippet(line), at, url, sig: sig || url });
   };
 
   // Description. Use the last edit time, because a tag can be added by editing.
   if (isOther(node.author)) {
     const at = node.lastEditedAt && ms(node.lastEditedAt) > ms(node.createdAt) ? node.lastEditedAt : node.createdAt;
-    addTag(node.body, at, node.url, node.author, 'Description');
+    // The signature ignores the edit time on purpose. See the seen state notes above.
+    const sigVia = [...findTags(node.body, matchers).via].sort().join(',');
+    addTag(node.body, at, node.url, node.author, 'Description', `desc:${sigVia}`);
   }
 
   for (const c of node.comments?.nodes || []) {
@@ -3408,6 +3492,7 @@ function deriveMentionItem(node, me, matchers) {
           snippet: makeSnippet(last.body),
           at: last.createdAt,
           url: last.url,
+          sig: last.url,
         });
       }
     }
@@ -3442,6 +3527,7 @@ async function listMentionCandidates(searchQuery) {
         search(query: $q, type: ISSUE, first: 100, after: $cursor) {
           pageInfo { hasNextPage endCursor }
           nodes {
+            __typename
             ... on PullRequest { id updatedAt }
             ... on Issue { id updatedAt }
           }
@@ -3482,13 +3568,14 @@ const MENTION_NODES_QUERY = `
     }
   }`;
 
-// Fetch details 25 items at a time, three requests in parallel.
+// Fetch details 10 items at a time, ten requests in parallel. Smaller chunks run faster
+// than big ones, because GitHub answers each chunk quicker.
 async function hydrateMentionNodes(ids) {
   const chunks = [];
-  for (let i = 0; i < ids.length; i += 25) chunks.push(ids.slice(i, i + 25));
+  for (let i = 0; i < ids.length; i += 10) chunks.push(ids.slice(i, i + 10));
   const out = [];
-  for (let i = 0; i < chunks.length; i += 3) {
-    const batch = await Promise.all(chunks.slice(i, i + 3).map(chunk =>
+  for (let i = 0; i < chunks.length; i += 10) {
+    const batch = await Promise.all(chunks.slice(i, i + 10).map(chunk =>
       graphql(MENTION_NODES_QUERY, { ids: chunk })
         .then(data => data.nodes.filter(Boolean))
         .catch(err => { console.warn('Mentions: could not fetch details for a batch:', err); return []; })
@@ -3521,16 +3608,27 @@ async function fetchMentions() {
     return;
   }
 
+  // The second search (items you commented on) exists to find replies, and only a PR has
+  // review threads. A commented issue that no tag search found has nothing to show.
   const candidates = new Map();
-  for (const batch of results) {
-    if (!batch) continue;
-    for (const n of batch) if (n?.id) candidates.set(n.id, n.updatedAt);
-  }
+  const needsDetails = new Set();
+  results.forEach((batch, i) => {
+    if (!batch) return;
+    for (const n of batch) {
+      if (!n?.id) continue;
+      candidates.set(n.id, n.updatedAt);
+      if (i !== 1 || n.__typename === 'PullRequest') needsDetails.add(n.id);
+    }
+  });
+
+  // Rebuild cached items if your teams or the bot list changed since they were saved.
+  const sig = mentionSignature();
+  if (sig !== mentionCacheSig) { mentionCache.clear(); mentionCacheSig = sig; }
 
   // Only fetch details for items that are new or changed since the last refresh.
   const stale = [];
   for (const [id, updatedAt] of candidates) {
-    if (mentionCache.get(id)?.updatedAt !== updatedAt) stale.push(id);
+    if (needsDetails.has(id) && mentionCache.get(id)?.updatedAt !== updatedAt) stale.push(id);
   }
   if (stale.length > 0) {
     const matchers = buildTagMatchers(username);
@@ -3549,6 +3647,7 @@ async function fetchMentions() {
   mentionItems = [...liveIds].map(id => mentionCache.get(id)?.item).filter(Boolean);
   mentionsLoaded = true;
   mentionsFetchFailed = false;
+  if (!anyFailed) saveMentionCache();
 }
 
 async function refreshMentions() {
@@ -3562,6 +3661,7 @@ async function refreshMentions() {
   } finally {
     mentionsFetching = false;
   }
+  await myPRsReady; // the My PRs overlap rule needs that list, and it is usually ready first
   renderMentions();
   updateHero();
   if (mentionsRefetchQueued) {
@@ -3575,7 +3675,7 @@ function computeMentionView() {
   const hidden = [...new Set([...getMutedTeams(), ...getExcludedTeams()])];
   const cutoff = Date.now() - getMentionsWindowDays() * 86400000;
   // Open PRs that are in My PRs already show "needs attention" there, so skip them here.
-  const myKeys = new Set(myOwnPRs.map(pr => prKey(pr)));
+  const myKeys = (myPRsLoadedOnce || myOwnPRs.length > 0) ? new Set(myOwnPRs.map(pr => prKey(pr))) : cachedMyKeys;
   const seenMap = getMentionsSeen();
 
   const entries = [];
@@ -3586,7 +3686,7 @@ function computeMentionView() {
     const latestAt = inWindow[0].at; // events are sorted newest first
     const shown = currentRequestedViaFilter ? inWindow.filter(e => e.via.includes(currentRequestedViaFilter)) : inWindow;
     if (shown.length === 0) continue;
-    entries.push({ item: it, events: shown, latestAt, seen: !!seenMap[it.key] && seenMap[it.key] >= latestAt });
+    entries.push({ item: it, events: shown, latestAt, seen: isMentionSeen(seenMap[it.key], inWindow) });
   }
 
   // A tag can name you and a team at once. It then counts under both tag filters.
@@ -3636,8 +3736,8 @@ function renderMentionCard(en) {
   const kindIcon = e.type === 'reply' ? octicon('comment', 12) : octicon('bell', 12);
   const key = escapeHtml(it.key);
   const actionBtn = en.seen
-    ? `<button type="button" class="mention-btn" onclick="restoreMention('${key}')" title="Move this back to your list">Restore</button>`
-    : `<button type="button" class="mention-btn" onclick="markMentionSeen('${key}', '${escapeHtml(en.latestAt)}')" title="Dismiss this mention. It comes back if something newer happens.">Dismiss</button>`;
+    ? `<button type="button" class="mention-btn" onclick="restoreMention('${key}')" title="Move this back to your list">${octicon('arrow-undo', 12)} Restore</button>`
+    : `<button type="button" class="mention-btn" onclick="markMentionSeen('${key}')" title="Dismiss this mention. It comes back if there is a new comment or tag.">${octicon('x', 12)} Dismiss</button>`;
   const kindOfItem = it.type === 'pr' ? 'pull request' : 'issue';
   const stateKey = it.state === 'MERGED' ? 'merged' : it.state === 'CLOSED' ? 'closed' : 'open';
   const colorClass = stateKey === 'open' ? '' : `mc-${stateKey}`;
@@ -3651,17 +3751,15 @@ function renderMentionCard(en) {
         </div>
         <div class="mention-row">
           <span class="mention-kind ${kindClass}">${kindIcon} ${escapeHtml(kindLabel)}</span>
+          <span class="mention-time" title="${escapeHtml(new Date(e.at).toLocaleString())}">${timeAgo(e.at)}</span>
           <span class="mention-where">${escapeHtml(e.where)}</span>
           ${more > 0 ? `<span class="mention-where">+${more} more</span>` : ''}
         </div>
         <div class="mention-quote"><strong>@${escapeHtml(e.author)}</strong> ${escapeHtml(e.snippet)}</div>
       </div>
       <div class="pr-right mention-right">
-        <div class="pr-updated">${timeAgo(e.at)}</div>
-        <div class="mention-actions">
-          <a class="mention-btn" href="${escapeHtml(e.url)}" target="_blank" rel="noopener">Open comment</a>
-          ${actionBtn}
-        </div>
+        <a class="mention-btn mention-btn-open" href="${escapeHtml(e.url)}" target="_blank" rel="noopener">${octicon('link-external', 12)} Open comment</a>
+        ${actionBtn}
       </div>
     </li>`;
 }
