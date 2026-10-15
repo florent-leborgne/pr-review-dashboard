@@ -1059,6 +1059,112 @@
   .pr-review-decision.rd-changes { background: var(--badge-red-bg); color: var(--red); }
   .pr-review-decision.rd-required { background: var(--badge-muted-bg); color: var(--text-muted); }
 
+  /* ── Draft control (Show / Hide / Only) ────────────── */
+  .draft-control { display: flex; align-items: center; gap: 6px; }
+  .draft-control.disabled { opacity: 0.45; pointer-events: none; }
+  .draft-control-label { font-size: 12px; color: var(--text-dim); }
+
+  .segmented {
+    display: inline-flex;
+    gap: 2px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 2px;
+  }
+  .segmented button {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    padding: 2px 10px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 500;
+    transition: all 0.15s;
+  }
+  .segmented button:hover { color: var(--text); }
+  .segmented button.active {
+    background: var(--surface-hover);
+    color: var(--text);
+    box-shadow: var(--shadow-card);
+  }
+
+  /* ── Merge queue chip ──────────────────────────────── */
+  .pr-queue-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 2px 9px;
+    border-radius: 10px;
+    white-space: nowrap;
+  }
+  .pr-queue-badge.q-wait { background: var(--badge-blue-bg); color: var(--elastic-blue); box-shadow: inset 0 0 0 1px var(--badge-blue-border); }
+  .pr-queue-badge.q-ready { background: var(--badge-green-bg); color: var(--green); }
+  .pr-queue-badge.q-neutral { background: var(--badge-muted-bg); color: var(--text-muted); }
+  .pr-queue-badge.q-blocked {
+    background: var(--badge-red-strong-bg);
+    color: var(--red);
+    box-shadow: inset 0 0 0 1px var(--badge-red-ring);
+  }
+  .pr-queue-eta { font-size: 11px; color: var(--text-dim); white-space: nowrap; }
+  .pr-queue-note { font-size: 12px; color: var(--text-muted); margin-top: 6px; }
+  .pr-queue-note.alert { color: var(--red); font-weight: 600; display: flex; align-items: center; gap: 5px; }
+
+  /* A queued PR is waiting on GitHub, so it stays quiet. */
+  .pr-card.queued { border-left-color: var(--border); opacity: 0.78; }
+  .pr-card.queued:hover { opacity: 1; }
+  .pr-card.queue-alert {
+    border-left-color: var(--red);
+    border-left-width: 4px;
+    padding-left: 17px;
+  }
+
+  /* ── Mentions ──────────────────────────────────────── */
+  .pr-card.mention-new {
+    border-left-color: var(--gold-strong);
+    border-left-width: 4px;
+    padding-left: 17px;
+  }
+  .pr-card.mention-seen { opacity: 0.55; }
+  .pr-card.mention-seen:hover { opacity: 0.85; }
+
+  .mention-type { color: var(--text-dim); display: inline-flex; margin-right: 6px; align-self: center; }
+  .mention-row { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; margin-top: 6px; }
+  .mention-where { font-size: 12px; color: var(--text-muted); }
+
+  .mention-kind {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 2px 9px;
+    border-radius: 10px;
+    white-space: nowrap;
+  }
+  .mention-kind.tag { background: var(--badge-blue-bg); color: var(--elastic-blue); box-shadow: inset 0 0 0 1px var(--badge-blue-border); }
+  .mention-kind.reply { background: var(--badge-purple-bg); color: var(--purple); }
+
+  .mention-quote {
+    margin-top: 8px;
+    padding-left: 10px;
+    border-left: 2px solid var(--border);
+    font-size: 13px;
+    color: var(--text-muted);
+    overflow-wrap: anywhere;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .mention-quote strong { color: var(--text); font-weight: 600; }
+  .mention-open { font-size: 12px; }
+  /* Sit at the bottom so the hover "mark as seen" button never covers the time. */
+  .mention-right { align-self: stretch; justify-content: flex-end; }
+
   /* ── Settings dialog ───────────────────────────────── */
   dialog.settings-dialog {
     border: none;
@@ -1286,11 +1392,19 @@
         My PRs
         <span class="view-tab-count" id="vcount-my-prs">0</span>
       </button>
+      <button class="view-tab" id="view-tab-mentions" onclick="switchView('mentions')">
+        Mentions
+        <span class="view-tab-count" id="vcount-mentions">0</span>
+      </button>
       <div class="view-tab-meta">
-        <label class="auto-refresh-toggle">
-          <input type="checkbox" id="show-drafts" checked onchange="onShowDraftsChange()">
-          Show drafts
-        </label>
+        <div class="draft-control" id="draft-control">
+          <span class="draft-control-label">Drafts</span>
+          <div class="segmented" id="draft-segmented" role="group" aria-label="Draft pull requests">
+            <button type="button" data-mode="all" class="active" title="Show draft and ready PRs">Show</button>
+            <button type="button" data-mode="hide" title="Hide draft PRs">Hide</button>
+            <button type="button" data-mode="only" title="Show only draft PRs">Only</button>
+          </div>
+        </div>
         <label class="auto-refresh-toggle">
           <input type="checkbox" id="auto-refresh" checked>
           Auto-refresh (5 min)
@@ -1316,6 +1430,19 @@
     <div id="my-prs-view" style="display:none;">
       <div id="my-pr-container"></div>
     </div>
+
+    <div id="mentions-view" style="display:none;">
+      <div class="toolbar">
+        <div class="filter-tabs" id="mention-filter-tabs">
+          <button class="filter-tab active" data-filter="all">All <span class="count" id="mcount-all">0</span></button>
+          <button class="filter-tab" data-filter="tag">Tagged you or your teams <span class="count" id="mcount-tag">0</span></button>
+          <button class="filter-tab" data-filter="reply">Replies to you <span class="count" id="mcount-reply">0</span></button>
+        </div>
+      </div>
+      <div id="mentions-container">
+        <div class="loading"><div class="spinner"></div><br>Loading mentions...</div>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -1338,7 +1465,7 @@
 </footer>
 
 <script>
-const STORAGE_KEYS = { token: 'prd_token', user: 'prd_user', teams: 'prd_teams', theme: 'prd_theme', dismissed: 'prd_dismissed', collapsedRepos: 'prd_collapsed_repos', collapsedMyRepos: 'prd_collapsed_my_repos', mutedTeams: 'prd_muted_teams', botLogins: 'prd_bot_logins', showDrafts: 'prd_show_drafts', view: 'prd_view', teamsBarCollapsed: 'prd_teams_bar_collapsed', excludedTeams: 'prd_excluded_teams' };
+const STORAGE_KEYS = { token: 'prd_token', user: 'prd_user', teams: 'prd_teams', theme: 'prd_theme', dismissed: 'prd_dismissed', collapsedRepos: 'prd_collapsed_repos', collapsedMyRepos: 'prd_collapsed_my_repos', mutedTeams: 'prd_muted_teams', botLogins: 'prd_bot_logins', showDrafts: 'prd_show_drafts', draftMode: 'prd_draft_mode', view: 'prd_view', teamsBarCollapsed: 'prd_teams_bar_collapsed', excludedTeams: 'prd_excluded_teams', mentionsSeen: 'prd_mentions_seen', mentionsWindow: 'prd_mentions_window_days' };
 const DEFAULT_BOT_LOGINS = ['elasticmachine', 'macroscopeapp'];
 let allPRs = [];
 let currentFilter = 'all';
@@ -1367,6 +1494,8 @@ const OCTICONS = {
   comment: 'M1 2.75C1 1.784 1.784 1 2.75 1h10.5c.966 0 1.75.784 1.75 1.75v7.5A1.75 1.75 0 0 1 13.25 12H9.06l-2.573 2.573A1.458 1.458 0 0 1 4 13.543V12H2.75A1.75 1.75 0 0 1 1 10.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h2a.75.75 0 0 1 .75.75v2.19l2.72-2.72a.749.749 0 0 1 .53-.22h4.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z',
   diff: 'M1.75 0h12.5C15.216 0 16 .784 16 1.75v12.5A1.75 1.75 0 0 1 14.25 16H1.75A1.75 1.75 0 0 1 0 14.25V1.75C0 .784.784 0 1.75 0ZM1.5 1.75v12.5c0 .138.112.25.25.25h12.5a.25.25 0 0 0 .25-.25V1.75a.25.25 0 0 0-.25-.25H1.75a.25.25 0 0 0-.25.25ZM7.25 8a.75.75 0 0 1 .75-.75h2.25V5a.75.75 0 0 1 1.5 0v2.25h2.25a.75.75 0 0 1 0 1.5h-2.25V11a.75.75 0 0 1-1.5 0V8.75H8a.75.75 0 0 1-.75-.75Z',
   inbox: 'M1.75 1h12.5c.967 0 1.75.784 1.75 1.75v9.5A1.75 1.75 0 0 1 14.25 14H1.75A1.75 1.75 0 0 1 0 12.25v-9.5C0 1.784.784 1 1.75 1Zm.25 8.5h2.7c.4 0 .76.225.94.583l.66 1.32a.25.25 0 0 0 .224.139h3.46a.25.25 0 0 0 .224-.14l.66-1.319A1.05 1.05 0 0 1 11.3 9.5H14V2.75a.25.25 0 0 0-.25-.25H2.25a.25.25 0 0 0-.25.25Z',
+  // Merge queue (three bars of decreasing length)
+  'merge-queue': 'M2.75 2.5h10.5a1.25 1.25 0 0 1 0 2.5H2.75a1.25 1.25 0 0 1 0-2.5Zm0 4.25h7.5a1.25 1.25 0 0 1 0 2.5h-7.5a1.25 1.25 0 0 1 0-2.5Zm0 4.25h4.5a1.25 1.25 0 0 1 0 2.5h-4.5a1.25 1.25 0 0 1 0-2.5Z',
   // Chevrons
   'chevron-down': 'M12.78 5.22a.749.749 0 0 1 0 1.06l-4.25 4.25a.749.749 0 0 1-1.06 0L3.22 6.28a.749.749 0 1 1 1.06-1.06L8 8.939l3.72-3.719a.749.749 0 0 1 1.06 0Z',
   'chevron-right': 'M6.22 3.22a.75.75 0 0 1 1.06 0l4.25 4.25a.75.75 0 0 1 0 1.06l-4.25 4.25a.749.749 0 0 1-1.275-.326.749.749 0 0 1 .215-.734L9.94 8 6.22 4.28a.75.75 0 0 1 0-1.06Z',
@@ -1491,6 +1620,7 @@ function toggleMuteTeam(teamOrDirect) {
   renderTeamsInfo();
   updateCounts();
   renderPRs();
+  renderMentions();
 }
 
 function getExcludedTeams() {
@@ -1511,6 +1641,7 @@ function addExcludedTeam(qualified) {
   renderTeamsInfo();
   updateCounts();
   renderPRs();
+  renderMentions();
 }
 
 function removeExcludedTeam(qualified) {
@@ -1518,6 +1649,7 @@ function removeExcludedTeam(qualified) {
   renderTeamsInfo();
   updateCounts();
   renderPRs();
+  renderMentions();
 }
 
 function getTeamsBarCollapsed() {
@@ -1605,8 +1737,10 @@ function showDashboard() {
   paintViewTabIcons();
   loadUserProfile();
   setupFilterTabs();
+  setupMentionFilterTabs();
   setupDraftToggle();
-  const savedView = localStorage.getItem(STORAGE_KEYS.view) || 'review';
+  const storedView = localStorage.getItem(STORAGE_KEYS.view);
+  const savedView = ['review', 'my-prs', 'mentions'].includes(storedView) ? storedView : 'review';
   switchView(savedView);
   fetchTeamsThenPRs();
   setupAutoRefresh();
@@ -1620,6 +1754,10 @@ function paintViewTabIcons() {
   }
   if (myTab && !myTab.querySelector('.octicon')) {
     myTab.insertAdjacentHTML('afterbegin', octicon('git-pull-request', 16));
+  }
+  const mentionsTab = document.getElementById('view-tab-mentions');
+  if (mentionsTab && !mentionsTab.querySelector('.octicon')) {
+    mentionsTab.insertAdjacentHTML('afterbegin', octicon('comment', 16));
   }
 }
 
@@ -1646,18 +1784,33 @@ function renderHero(stats) {
 
   const total = stats?.totalReviews ?? 0;
   const attention = stats?.myPrsAttention ?? 0;
+  const mentions = stats?.newMentions ?? 0;
+  const queued = stats?.queued ?? 0;
+  const queuedPart = queued > 0 ? `<strong>${queued}</strong> in the merge queue` : '';
 
   let html;
-  if (total === 0 && attention === 0) {
+  if (total === 0 && attention === 0 && mentions === 0) {
     html = '<span>All quiet on the review front, <strong>@' + escapeHtml(localStorage.getItem(STORAGE_KEYS.user) || 'friend') + '</strong>.</span>';
+    if (queuedPart) html += ' &middot; ' + queuedPart;
   } else {
     const parts = [];
     if (total > 0) parts.push(`<strong>${total}</strong> review${total === 1 ? '' : 's'} await`);
     if (attention > 0) parts.push(`<span class="alert">${attention}</span> of your PR${attention === 1 ? '' : 's'} need${attention === 1 ? 's' : ''} attention`);
+    if (mentions > 0) parts.push(`<span class="alert">${mentions}</span> new mention${mentions === 1 ? '' : 's'}`);
+    if (queuedPart) parts.push(queuedPart);
     html = parts.join(' &middot; ');
   }
   text.innerHTML = html;
   hero.classList.add('visible');
+}
+
+function updateHero() {
+  renderHero({
+    totalReviews: getViaFilteredPRs().active.length,
+    myPrsAttention: myOwnPRs.filter(pr => pr.needsAttention || pr.queueAlert).length,
+    newMentions: getMentionSummary().unseen,
+    queued: myOwnPRs.filter(pr => pr.queued && matchesDraftMode(pr)).length,
+  });
 }
 
 function logout() {
@@ -1670,22 +1823,41 @@ function setupFilterTabs() {
   document.getElementById('filter-tabs').addEventListener('click', (e) => {
     const tab = e.target.closest('.filter-tab');
     if (!tab) return;
-    document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('#filter-tabs .filter-tab').forEach(t => t.classList.remove('active'));
     tab.classList.add('active');
     currentFilter = tab.dataset.filter;
     renderPRs();
   });
 }
 
+/* ── Draft mode: 'all' (show), 'hide', or 'only' ───────── */
+function getDraftMode() {
+  const saved = localStorage.getItem(STORAGE_KEYS.draftMode);
+  if (saved === 'all' || saved === 'hide' || saved === 'only') return saved;
+  // Migrate the old "Show drafts" checkbox ('true' / 'false').
+  return localStorage.getItem(STORAGE_KEYS.showDrafts) === 'false' ? 'hide' : 'all';
+}
+
+function matchesDraftMode(pr) {
+  const mode = getDraftMode();
+  return mode === 'all' || (mode === 'hide' && !pr.isDraft) || (mode === 'only' && !!pr.isDraft);
+}
+
+function paintDraftControl() {
+  const mode = getDraftMode();
+  document.querySelectorAll('#draft-segmented button').forEach(b => {
+    b.classList.toggle('active', b.dataset.mode === mode);
+  });
+}
+
 function setupDraftToggle() {
-  const el = document.getElementById('show-drafts');
-  const saved = localStorage.getItem(STORAGE_KEYS.showDrafts);
-  if (saved !== null) el.checked = saved === 'true';
-  el.addEventListener('change', () => {
-    localStorage.setItem(STORAGE_KEYS.showDrafts, el.checked);
-    updateCounts();
-    renderPRs();
-    renderMyPRs();
+  paintDraftControl();
+  document.getElementById('draft-segmented').addEventListener('click', (e) => {
+    const btn = e.target.closest('button[data-mode]');
+    if (!btn) return;
+    localStorage.setItem(STORAGE_KEYS.draftMode, btn.dataset.mode);
+    paintDraftControl();
+    onShowDraftsChange();
   });
 }
 
@@ -1874,6 +2046,7 @@ function renderTeamsInfo() {
     renderTeamsInfo();
     updateCounts();
     renderPRs();
+    renderMentions();
   });
 
   container.querySelector('.teams-info').addEventListener('dblclick', (e) => {
@@ -1917,6 +2090,7 @@ async function searchPRs(searchQuery) {
               createdAt
               updatedAt
               isDraft
+              mergeQueueEntry { position state estimatedTimeToMerge }
               author { login avatarUrl }
               repository {
                 nameWithOwner
@@ -1996,6 +2170,17 @@ async function searchMyPRs(searchQuery) {
               updatedAt
               isDraft
               reviewDecision
+              mergeQueueEntry { position state estimatedTimeToMerge }
+              timelineItems(last: 1, itemTypes: [ADDED_TO_MERGE_QUEUE_EVENT, REMOVED_FROM_MERGE_QUEUE_EVENT]) {
+                nodes {
+                  __typename
+                  ... on AddedToMergeQueueEvent { createdAt }
+                  ... on RemovedFromMergeQueueEvent { createdAt reason }
+                }
+              }
+              headCommit: commits(last: 1) {
+                nodes { commit { committedDate } }
+              }
               author { login avatarUrl }
               repository {
                 nameWithOwner
@@ -2134,9 +2319,9 @@ function renderSettingsBody() {
 
   body.innerHTML = `
     <div class="settings-section">
-      <div class="settings-section-title">My PRs &mdash; Activity tracking</div>
+      <div class="settings-section-title">Activity tracking</div>
       <div class="settings-section-desc">
-        Accounts below are ignored when detecting new activity on your open PRs.
+        Accounts below are ignored when detecting new activity on your open PRs and new mentions.
         Use this for CI bots and automation service accounts that register as regular users.
       </div>
       <div class="settings-bot-row">
@@ -2146,6 +2331,15 @@ function renderSettingsBody() {
           <button onclick="addBotLogin()">Add</button>
         </span>
       </div>
+    </div>
+    <div class="settings-section">
+      <div class="settings-section-title">Mentions time window</div>
+      <div class="settings-section-desc">
+        The Mentions tab hides tags and replies older than this. Items you answer on GitHub leave the list on their own.
+      </div>
+      <select id="mentions-window-select" onchange="saveMentionsWindow(this.value)" style="font-size:12px; padding:3px 6px; border-radius:6px; border:1px solid var(--border-muted); background:var(--surface); color:var(--text);">
+        ${MENTION_WINDOW_OPTIONS.map(d => `<option value="${d}"${d === getMentionsWindowDays() ? ' selected' : ''}>Last ${d} days${d === 14 ? ' (default)' : ''}</option>`).join('')}
+      </select>
     </div>
     <div class="settings-section">
       <div class="settings-section-title">Team tag exclusions</div>
@@ -2181,6 +2375,7 @@ function addBotLogin() {
     if (!stored.includes(login)) saveBotLogins([...stored, login]);
   } catch { saveBotLogins([...DEFAULT_BOT_LOGINS, login]); }
   renderBotFilter();
+  mentionCache.clear(); // rebuild mentions with the new bot list on the next refresh
   if (input) input.value = '';
 }
 
@@ -2190,6 +2385,7 @@ function removeBotLogin(login) {
     saveBotLogins(stored.filter(l => l !== login));
   } catch { saveBotLogins(DEFAULT_BOT_LOGINS.filter(l => l !== login)); }
   renderBotFilter();
+  mentionCache.clear();
 }
 
 // Returns true only for real human GitHub accounts.
@@ -2345,10 +2541,24 @@ async function fetchMyPRs() {
         return (order[a.state] ?? 9) - (order[b.state] ?? 9);
       });
 
+    // Merge queue. A PR in the queue is waiting on GitHub. A PR the queue reports as
+    // unmergeable, or that was removed from the queue and has no newer commit, needs you.
+    const queue = buildQueue(pr);
+    const lastQueueEvent = pr.timelineItems?.nodes?.[0];
+    const headCommittedAt = pr.headCommit?.nodes?.[0]?.commit?.committedDate;
+    const removedFromQueue = (!queue && lastQueueEvent?.__typename === 'RemovedFromMergeQueueEvent'
+      && (!headCommittedAt || lastQueueEvent.createdAt > headCommittedAt))
+      ? { reason: lastQueueEvent.reason || null }
+      : null;
+
     return {
       ...pr,
       repo: pr.repository?.nameWithOwner || 'unknown',
       ciState,
+      queue,
+      removedFromQueue,
+      queued: !!queue && queue.state !== 'UNMERGEABLE',
+      queueAlert: queue?.state === 'UNMERGEABLE' || !!removedFromQueue,
       reviewDecision: pr.reviewDecision || null,
       needsAttention,
       lastActivityLogin,
@@ -2579,6 +2789,7 @@ async function fetchPRs() {
         requestedVia,
         otherReviewers,
         ciState,
+        queue: buildQueue(pr),
         repo: pr.repository?.nameWithOwner || 'unknown'
       };
     }).filter(pr => pr.myState !== 'APPROVED' && pr.author?.login !== username && !pr.repository?.isArchived
@@ -2589,11 +2800,12 @@ async function fetchPRs() {
     updateCounts();
     renderPRs();
     renderMyPRs();
+    renderMentions();
     document.getElementById('status-text').textContent = `Updated ${new Date().toLocaleTimeString()}`;
-    renderHero({
-      totalReviews: getViaFilteredPRs().active.length,
-      myPrsAttention: myOwnPRs.filter(pr => pr.needsAttention).length,
-    });
+    updateHero();
+
+    // Mentions load in the background so they never delay review requests and My PRs.
+    refreshMentions();
 
   } catch (e) {
     errContainer.innerHTML = `<div class="error-msg">${octicon('alert', 14)} Failed to fetch PRs: ${escapeHtml(e.message)}</div>`;
@@ -2605,12 +2817,10 @@ async function fetchPRs() {
 }
 
 function getViaFilteredPRs() {
-  const showDrafts = document.getElementById('show-drafts')?.checked ?? true;
   const muted = getMutedTeams();
   const excluded = getExcludedTeams();
   const hidden = [...new Set([...muted, ...excluded])];
-  let prs = allPRs;
-  if (!showDrafts) prs = prs.filter(pr => !pr.isDraft);
+  let prs = allPRs.filter(matchesDraftMode);
   if (currentRequestedViaFilter) prs = prs.filter(pr => pr.requestedVia.includes(currentRequestedViaFilter));
   // Exclude PRs whose only requestedVia entries are all muted or excluded
   if (hidden.length > 0) {
@@ -2678,11 +2888,12 @@ function renderPRs() {
 
   if (filtered.length === 0 && filteredDismissed.length === 0) {
     const isAll = currentFilter === 'all';
+    const onlyDrafts = getDraftMode() === 'only';
     html = `
       <div class="blankslate">
-        <div class="blankslate-octicon">${octicon(isAll ? 'smiley' : 'search', 32)}</div>
-        <h3>${isAll ? 'Inbox zero, brave reviewer' : 'No PRs in this category'}</h3>
-        <p>${isAll ? 'No pending reviews. Take a moment to rest at the inn.' : 'Try a different filter, or refresh to fetch the latest.'}</p>
+        <div class="blankslate-octicon">${octicon(isAll && !onlyDrafts ? 'smiley' : 'search', 32)}</div>
+        <h3>${onlyDrafts ? 'No draft review requests' : isAll ? 'Inbox zero, brave reviewer' : 'No PRs in this category'}</h3>
+        <p>${onlyDrafts ? 'None of your review requests are drafts. Switch Drafts to "Show" to see them all.' : isAll ? 'No pending reviews. Take a moment to rest at the inn.' : 'Try a different filter, or refresh to fetch the latest.'}</p>
       </div>`;
   } else if (filtered.length === 0) {
     html = `
@@ -2749,7 +2960,7 @@ function renderPRCard(pr, isDismissedCard = false) {
     : `<button class="pr-dismiss" onclick="dismissPR('${escapedKey}', '${pr.updatedAt}')" title="Dismiss" aria-label="Dismiss">${octicon('x', 12)}</button>`;
 
   return `
-    <li class="pr-card ${stateClass}${dismissedClass}">
+    <li class="pr-card ${stateClass}${dismissedClass}${pr.queue ? ' queued' : ''}">
       ${actionBtn}
       <div class="pr-body">
         <div class="pr-title-row">
@@ -2764,6 +2975,7 @@ function renderPRCard(pr, isDismissedCard = false) {
         ${labels ? `<div class="pr-labels">${labels}</div>` : ''}
       </div>
       <div class="pr-right">
+        ${renderQueueBadge(pr.queue)}
         <span class="pr-review-status ${stateClass}">${stateLabel}</span>
         <div class="pr-updated">updated ${timeAgo(pr.updatedAt)}</div>
       </div>
@@ -2810,6 +3022,45 @@ function renderCiInline(ciState) {
   return cfg ? `<span class="pr-ci-inline ${cfg.cls}">${cfg.icon} ${cfg.label}</span>` : '';
 }
 
+/* ── Merge queue ───────────────────────────────────────── */
+function buildQueue(pr) {
+  const entry = pr.mergeQueueEntry;
+  if (!entry) return null;
+  return {
+    state: entry.state,
+    position: entry.position,
+    etaSeconds: typeof entry.estimatedTimeToMerge === 'number' ? entry.estimatedTimeToMerge : null,
+  };
+}
+
+function formatEta(seconds) {
+  if (!seconds || seconds <= 0) return '';
+  const minutes = Math.max(1, Math.round(seconds / 60));
+  return minutes >= 60 ? `~${Math.round(minutes / 60)} h` : `~${minutes} min`;
+}
+
+// Chip for a PR in the merge queue. Shown first in the right-hand column.
+function renderQueueBadge(queue) {
+  if (!queue) return '';
+  const pos = queue.position ? ` #${queue.position}` : '';
+  const cfg = {
+    QUEUED:          { cls: 'q-wait',    label: `Queued${pos}` },
+    AWAITING_CHECKS: { cls: 'q-wait',    label: `Queued${pos} · checks running` },
+    MERGEABLE:       { cls: 'q-ready',   label: 'Queued · ready to merge' },
+    LOCKED:          { cls: 'q-neutral', label: 'Queued · locked' },
+    UNMERGEABLE:     { cls: 'q-blocked', label: 'Queue blocked' },
+  }[queue.state] || { cls: 'q-wait', label: 'Queued' };
+  const eta = queue.state !== 'UNMERGEABLE' ? formatEta(queue.etaSeconds) : '';
+  return `<span class="pr-queue-badge ${cfg.cls}" title="In the merge queue">${octicon('merge-queue', 12)} ${cfg.label}</span>`
+    + (eta ? `<span class="pr-queue-eta">est. ${eta}</span>` : '');
+}
+
+function renderRemovedFromQueueBadge(info) {
+  if (!info) return '';
+  const reason = info.reason ? ` (${info.reason.toLowerCase().replace(/_/g, ' ')})` : '';
+  return `<span class="pr-queue-badge q-blocked" title="Removed from the merge queue${escapeHtml(reason)}">${octicon('merge-queue', 12)} Removed from queue</span>`;
+}
+
 function renderCiBadge(ciState) {
   if (!ciState) return '';
   const cfg = {
@@ -2826,8 +3077,12 @@ function switchView(view) {
   localStorage.setItem(STORAGE_KEYS.view, view);
   document.getElementById('review-view').style.display = view === 'review' ? '' : 'none';
   document.getElementById('my-prs-view').style.display = view === 'my-prs' ? '' : 'none';
+  document.getElementById('mentions-view').style.display = view === 'mentions' ? '' : 'none';
   document.getElementById('view-tab-review').classList.toggle('active', view === 'review');
   document.getElementById('view-tab-my-prs').classList.toggle('active', view === 'my-prs');
+  document.getElementById('view-tab-mentions').classList.toggle('active', view === 'mentions');
+  // Issues and discussions have no draft state, so the control only applies to PR tabs.
+  document.getElementById('draft-control').classList.toggle('disabled', view === 'mentions');
 }
 
 function renderMyPRCard(pr) {
@@ -2856,9 +3111,24 @@ function renderMyPRCard(pr) {
   const ciHtml = renderCiBadge(pr.ciState);
 
   const attentionClass = pr.needsAttention ? ' needs-attention' : '';
+  const queueClass = pr.queueAlert ? ' queue-alert' : pr.queued ? ' queued' : '';
+
+  const queueHtml = pr.queue
+    ? renderQueueBadge(pr.queue)
+    : renderRemovedFromQueueBadge(pr.removedFromQueue);
+
+  let queueNote = '';
+  if (pr.queue?.state === 'UNMERGEABLE') {
+    queueNote = `<div class="pr-queue-note alert">${octicon('alert', 12)} The merge queue reports this PR as unmergeable.</div>`;
+  } else if (pr.removedFromQueue) {
+    const reason = pr.removedFromQueue.reason ? ` (${pr.removedFromQueue.reason.toLowerCase().replace(/_/g, ' ')})` : '';
+    queueNote = `<div class="pr-queue-note alert">${octicon('alert', 12)} Removed from the merge queue${escapeHtml(reason)}.</div>`;
+  } else if (pr.queued) {
+    queueNote = '<div class="pr-queue-note">Waiting for GitHub to merge it. Nothing to do.</div>';
+  }
 
   return `
-    <li class="pr-card${attentionClass}">
+    <li class="pr-card${attentionClass}${queueClass}">
       <div class="pr-body">
         <div class="pr-title-row">
           <span class="pr-number">#${pr.number}</span><a class="pr-title" href="${pr.url}" target="_blank" rel="noopener">${draft}${escapeHtml(pr.title)}</a><button class="pr-copy-btn" title="Copy PR link" aria-label="Copy PR link" onclick="copyPRUrl(this, '${pr.url}')">${octicon('copy', 13)}</button>
@@ -2869,10 +3139,12 @@ function renderMyPRCard(pr) {
           ${isCopilotAuthor(pr.author) ? `<span class="pr-copilot-badge" title="Opened by Copilot — triggered by you">${copilotMark(12)} Copilot</span>` : ''}
         </div>
         ${attentionHtml}
+        ${queueNote}
         ${reviewerBadges ? `<div class="pr-reviewers" style="margin-top:6px;"><span class="pr-reviewers-label">Reviews:</span>${reviewerBadges}</div>` : ''}
         ${labels ? `<div class="pr-labels">${labels}</div>` : ''}
       </div>
       <div class="pr-right">
+        ${queueHtml}
         ${rdHtml}
         ${ciHtml}
         <div class="pr-updated">updated ${timeAgo(pr.updatedAt)}</div>
@@ -2884,6 +3156,7 @@ function onShowDraftsChange() {
   updateCounts();
   renderPRs();
   renderMyPRs();
+  updateHero();
 }
 
 function renderMyPRs() {
@@ -2891,18 +3164,24 @@ function renderMyPRs() {
   const countEl = document.getElementById('vcount-my-prs');
   if (!container || !countEl) return;
 
-  const showDrafts = document.getElementById('show-drafts')?.checked ?? true;
-  const visible = showDrafts ? myOwnPRs : myOwnPRs.filter(pr => !pr.isDraft);
+  const mode = getDraftMode();
+  // PRs that need you come first, PRs waiting in the merge queue come last.
+  const rank = pr => (pr.needsAttention || pr.queueAlert) ? 0 : pr.queued ? 2 : 1;
+  const visible = myOwnPRs.filter(matchesDraftMode)
+    .map((pr, i) => ({ pr, i }))
+    .sort((a, b) => (rank(a.pr) - rank(b.pr)) || (a.i - b.i))
+    .map(x => x.pr);
 
-  const attentionCount = visible.filter(pr => pr.needsAttention).length;
+  const attentionCount = visible.filter(pr => pr.needsAttention || pr.queueAlert).length;
   countEl.textContent = visible.length;
   countEl.className = `view-tab-count${attentionCount > 0 ? ' has-attention' : ''}`;
 
   if (visible.length === 0) {
+    const nothingOwned = myOwnPRs.length === 0;
     container.innerHTML = `<div class="blankslate">
       <div class="blankslate-octicon">${octicon('git-pull-request', 32)}</div>
-      <h3>No open PRs of your own</h3>
-      <p>${myOwnPRs.length === 0 ? 'Nothing authored or assigned to you. Time to start a new quest.' : 'All your open PRs are drafts. Toggle "Show drafts" to see them.'}</p>
+      <h3>${nothingOwned ? 'No open PRs of your own' : mode === 'only' ? 'No drafts' : 'No open PRs of your own'}</h3>
+      <p>${nothingOwned ? 'Nothing authored or assigned to you. Time to start a new quest.' : mode === 'only' ? 'None of your open PRs are drafts. Everything is ready for review.' : 'All your open PRs are drafts. Switch Drafts to "Show" to see them.'}</p>
     </div>`;
     return;
   }
@@ -2928,6 +3207,487 @@ function renderMyPRs() {
     }
   }
   html += '</ul>';
+  container.innerHTML = html;
+}
+
+/* ── Mentions ──────────────────────────────────────────────
+   Two kinds of event, both on issues and PRs:
+   - tag:   someone wrote @you or @one-of-your-teams in a description, comment,
+            review or review comment (an explicit tag, never a guess).
+   - reply: someone answered one of your review comments in the same review thread.
+   Fetching is two-phase to stay cheap on the GraphQL rate limit:
+   1. list candidates (id + updatedAt only), 2. fetch details only for items whose
+   updatedAt changed since the last refresh. */
+const MENTION_WINDOW_OPTIONS = [7, 14, 30, 60];
+let mentionItems = [];            // one entry per issue/PR that has at least one open event
+const mentionCache = new Map();   // node id -> { updatedAt, item }
+let mentionsLoaded = false;
+let mentionsFetchFailed = false;
+let mentionsFetching = false;
+let mentionsRefetchQueued = false;
+let currentMentionFilter = 'all'; // 'all' | 'tag' | 'reply'
+let mentionsSeenExpanded = false;
+
+function getMentionsWindowDays() {
+  const n = parseInt(localStorage.getItem(STORAGE_KEYS.mentionsWindow) || '', 10);
+  return MENTION_WINDOW_OPTIONS.includes(n) ? n : 14;
+}
+
+function saveMentionsWindow(value) {
+  const n = parseInt(value, 10);
+  if (!MENTION_WINDOW_OPTIONS.includes(n)) return;
+  localStorage.setItem(STORAGE_KEYS.mentionsWindow, String(n));
+  renderMentions();
+  updateHero();
+  refreshMentions(); // a longer window needs older items
+}
+
+function getMentionsSeen() {
+  try { return JSON.parse(localStorage.getItem(STORAGE_KEYS.mentionsSeen) || '{}'); }
+  catch { return {}; }
+}
+
+// Seen state stores the timestamp of the newest event at the time you marked it.
+// The item comes back when something newer happens, like Dismiss on review requests.
+function markMentionSeen(key, latestAt) {
+  const seen = getMentionsSeen();
+  seen[key] = latestAt;
+  localStorage.setItem(STORAGE_KEYS.mentionsSeen, JSON.stringify(seen));
+  renderMentions();
+  updateHero();
+}
+
+function restoreMention(key) {
+  const seen = getMentionsSeen();
+  delete seen[key];
+  localStorage.setItem(STORAGE_KEYS.mentionsSeen, JSON.stringify(seen));
+  renderMentions();
+  updateHero();
+}
+
+function toggleMentionsSeenSection() {
+  mentionsSeenExpanded = !mentionsSeenExpanded;
+  renderMentions();
+}
+
+function setupMentionFilterTabs() {
+  document.getElementById('mention-filter-tabs').addEventListener('click', (e) => {
+    const tab = e.target.closest('.filter-tab');
+    if (!tab) return;
+    document.querySelectorAll('#mention-filter-tabs .filter-tab').forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    currentMentionFilter = tab.dataset.filter;
+    renderMentions();
+  });
+}
+
+function escapeRegex(str) {
+  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+// Matchers for @you and @org/team for every team you belong to.
+function buildTagMatchers(me) {
+  const before = '(^|[^\\w/.@-])';
+  const matchers = [{ via: 'direct', re: new RegExp(`${before}@${escapeRegex(me)}(?![\\w-])`, 'i') }];
+  for (const t of userTeams) {
+    matchers.push({ via: t.qualified, re: new RegExp(`${before}@${escapeRegex(t.qualified)}(?![\\w/-])`, 'i') });
+  }
+  return matchers;
+}
+
+// A tag inside a code block, inline code, or a quoted line is not a real ping.
+function stripQuotedAndCode(text) {
+  return (text || '')
+    .replace(/<!--[\s\S]*?-->/g, ' ')
+    .replace(/```[\s\S]*?```/g, ' ')
+    .split('\n')
+    .filter(line => !/^\s*>/.test(line))
+    .join('\n')
+    .replace(/`[^`\n]*`/g, ' ');
+}
+
+function findTags(text, matchers) {
+  const via = [];
+  let line = null;
+  for (const l of stripQuotedAndCode(text).split('\n')) {
+    let hit = false;
+    for (const m of matchers) {
+      if (m.re.test(l)) {
+        hit = true;
+        if (!via.includes(m.via)) via.push(m.via);
+      }
+    }
+    if (hit && line === null) line = l;
+  }
+  return { via, line };
+}
+
+function makeSnippet(text) {
+  const out = (text || '').replace(/<!--[\s\S]*?-->/g, ' ').replace(/\s+/g, ' ').trim();
+  return out.length > 240 ? out.slice(0, 237) + '…' : out;
+}
+
+// Turn one fetched issue or PR into an item with its open events (or null).
+function deriveMentionItem(node, me, matchers) {
+  if (!node?.url || !node.repository || node.repository.isArchived) return null;
+  const isPR = node.__typename === 'PullRequest';
+  const ms = s => new Date(s).getTime();
+  const isMine = a => a?.login === me;
+  const isOther = a => !!a && !isMine(a) && isHumanActor(a);
+
+  const events = [];
+  const myTimes = [];
+
+  const addTag = (text, at, url, author, where) => {
+    const { via, line } = findTags(text, matchers);
+    if (via.length === 0) return;
+    events.push({ type: 'tag', via, where, author: author.login, snippet: makeSnippet(line), at, url });
+  };
+
+  // Description. Use the last edit time, because a tag can be added by editing.
+  if (isOther(node.author)) {
+    const at = node.lastEditedAt && ms(node.lastEditedAt) > ms(node.createdAt) ? node.lastEditedAt : node.createdAt;
+    addTag(node.body, at, node.url, node.author, 'Description');
+  }
+
+  for (const c of node.comments?.nodes || []) {
+    if (isMine(c.author)) myTimes.push(c.createdAt);
+    else if (isOther(c.author)) addTag(c.body, c.createdAt, c.url, c.author, 'Comment');
+  }
+
+  for (const r of node.reviews?.nodes || []) {
+    if (isMine(r.author)) myTimes.push(r.createdAt);
+    else if (isOther(r.author)) addTag(r.body, r.createdAt, r.url, r.author, 'Review');
+  }
+
+  // Review threads are real threads, so a reply to your comment is exact.
+  for (const thread of node.reviewThreads?.nodes || []) {
+    const cs = thread.comments?.nodes || [];
+    const file = cs[0]?.path ? cs[0].path.split('/').pop() : null;
+    let lastMine = -1;
+    cs.forEach((c, i) => {
+      if (isMine(c.author)) { myTimes.push(c.createdAt); lastMine = i; }
+      else if (isOther(c.author)) addTag(c.body, c.createdAt, c.url, c.author, file ? `Review comment on ${file}` : 'Review comment');
+    });
+    if (lastMine >= 0 && !thread.isResolved) {
+      const replies = cs.slice(lastMine + 1).filter(c => isOther(c.author));
+      if (replies.length > 0) {
+        const last = replies[replies.length - 1];
+        events.push({
+          type: 'reply',
+          via: ['direct'],
+          where: file ? `Reply in a review thread on ${file}` : 'Reply in a review thread',
+          author: last.author.login,
+          snippet: makeSnippet(last.body),
+          at: last.createdAt,
+          url: last.url,
+        });
+      }
+    }
+  }
+
+  // Once you post on the item after an event, you have answered it.
+  const myLast = myTimes.length ? Math.max(...myTimes.map(ms)) : 0;
+  const open = events
+    .filter(e => ms(e.at) > myLast)
+    .sort((a, b) => (ms(b.at) - ms(a.at)) || (a.type === 'tag' ? -1 : 1));
+  if (open.length === 0) return null;
+
+  const repo = node.repository.nameWithOwner;
+  return {
+    key: `${repo}#${node.number}`,
+    repo,
+    number: node.number,
+    title: node.title,
+    url: node.url,
+    type: isPR ? 'pr' : 'issue',
+    state: node.state,
+    events: open,
+  };
+}
+
+async function listMentionCandidates(searchQuery) {
+  const nodes = [];
+  let cursor = null;
+  for (let page = 0; page < 5; page++) {
+    const data = await graphql(`
+      query($q: String!, $cursor: String) {
+        search(query: $q, type: ISSUE, first: 100, after: $cursor) {
+          pageInfo { hasNextPage endCursor }
+          nodes {
+            ... on PullRequest { id updatedAt }
+            ... on Issue { id updatedAt }
+          }
+        }
+      }
+    `, { q: searchQuery, cursor });
+    nodes.push(...data.search.nodes.filter(Boolean));
+    if (!data.search.pageInfo.hasNextPage) break;
+    cursor = data.search.pageInfo.endCursor;
+  }
+  return nodes;
+}
+
+const MENTION_COMMENT_FIELDS = 'url createdAt body author { login __typename }';
+const MENTION_NODES_QUERY = `
+  query($ids: [ID!]!) {
+    nodes(ids: $ids) {
+      __typename
+      ... on PullRequest {
+        id number title url state createdAt lastEditedAt updatedAt body
+        author { login __typename }
+        repository { nameWithOwner isArchived }
+        comments(last: 20) { nodes { ${MENTION_COMMENT_FIELDS} } }
+        reviews(last: 20) { nodes { ${MENTION_COMMENT_FIELDS} } }
+        reviewThreads(last: 30) {
+          nodes {
+            isResolved
+            comments(first: 10) { nodes { ${MENTION_COMMENT_FIELDS} path } }
+          }
+        }
+      }
+      ... on Issue {
+        id number title url state createdAt lastEditedAt updatedAt body
+        author { login __typename }
+        repository { nameWithOwner isArchived }
+        comments(last: 20) { nodes { ${MENTION_COMMENT_FIELDS} } }
+      }
+    }
+  }`;
+
+// Fetch details 25 items at a time, three requests in parallel.
+async function hydrateMentionNodes(ids) {
+  const chunks = [];
+  for (let i = 0; i < ids.length; i += 25) chunks.push(ids.slice(i, i + 25));
+  const out = [];
+  for (let i = 0; i < chunks.length; i += 3) {
+    const batch = await Promise.all(chunks.slice(i, i + 3).map(chunk =>
+      graphql(MENTION_NODES_QUERY, { ids: chunk })
+        .then(data => data.nodes.filter(Boolean))
+        .catch(err => { console.warn('Mentions: could not fetch details for a batch:', err); return []; })
+    ));
+    batch.forEach(b => out.push(...b));
+  }
+  return out;
+}
+
+async function fetchMentions() {
+  const username = localStorage.getItem(STORAGE_KEYS.user);
+  if (!username) return;
+
+  const since = new Date(Date.now() - getMentionsWindowDays() * 86400000).toISOString().slice(0, 10);
+  const base = `archived:false updated:>=${since}`;
+  const queries = [
+    { label: 'tagged you', q: `mentions:${username} ${base}` },
+    { label: 'you commented', q: `commenter:${username} ${base}` },
+    ...userTeams.map(t => ({ label: `team: ${t.qualified}`, q: `team:${t.qualified} ${base}` })),
+  ];
+
+  const results = await Promise.all(queries.map(x =>
+    listMentionCandidates(x.q).catch(err => {
+      console.warn(`Mentions search failed for "${x.label}":`, err);
+      return null; // null = failed, [] = genuinely empty
+    })
+  ));
+  if (results.every(r => r === null)) {
+    if (!mentionsLoaded) mentionsFetchFailed = true;
+    return;
+  }
+
+  const candidates = new Map();
+  for (const batch of results) {
+    if (!batch) continue;
+    for (const n of batch) if (n?.id) candidates.set(n.id, n.updatedAt);
+  }
+
+  // Only fetch details for items that are new or changed since the last refresh.
+  const stale = [];
+  for (const [id, updatedAt] of candidates) {
+    if (mentionCache.get(id)?.updatedAt !== updatedAt) stale.push(id);
+  }
+  if (stale.length > 0) {
+    const matchers = buildTagMatchers(username);
+    for (const node of await hydrateMentionNodes(stale)) {
+      mentionCache.set(node.id, {
+        updatedAt: candidates.get(node.id) ?? node.updatedAt,
+        item: deriveMentionItem(node, username, matchers),
+      });
+    }
+  }
+
+  // If a search failed, keep what we already know instead of dropping items.
+  const anyFailed = results.some(r => r === null);
+  const liveIds = anyFailed ? new Set([...candidates.keys(), ...mentionCache.keys()]) : new Set(candidates.keys());
+  for (const id of [...mentionCache.keys()]) if (!liveIds.has(id)) mentionCache.delete(id);
+  mentionItems = [...liveIds].map(id => mentionCache.get(id)?.item).filter(Boolean);
+  mentionsLoaded = true;
+  mentionsFetchFailed = false;
+}
+
+async function refreshMentions() {
+  if (mentionsFetching) { mentionsRefetchQueued = true; return; }
+  mentionsFetching = true;
+  try {
+    await fetchMentions();
+  } catch (e) {
+    console.warn('Mentions fetch failed:', e);
+    if (!mentionsLoaded) mentionsFetchFailed = true;
+  } finally {
+    mentionsFetching = false;
+  }
+  renderMentions();
+  updateHero();
+  if (mentionsRefetchQueued) {
+    mentionsRefetchQueued = false;
+    refreshMentions();
+  }
+}
+
+// Apply window, muted/excluded teams, the team filter, and the My PRs overlap rule.
+function computeMentionView() {
+  const hidden = [...new Set([...getMutedTeams(), ...getExcludedTeams()])];
+  const cutoff = Date.now() - getMentionsWindowDays() * 86400000;
+  // Open PRs that are in My PRs already show "needs attention" there, so skip them here.
+  const myKeys = new Set(myOwnPRs.map(pr => prKey(pr)));
+  const seenMap = getMentionsSeen();
+
+  const entries = [];
+  for (const it of mentionItems) {
+    if (it.type === 'pr' && myKeys.has(it.key)) continue;
+    const inWindow = it.events.filter(e => new Date(e.at).getTime() >= cutoff && e.via.some(v => !hidden.includes(v)));
+    if (inWindow.length === 0) continue;
+    const latestAt = inWindow[0].at; // events are sorted newest first
+    const shown = currentRequestedViaFilter ? inWindow.filter(e => e.via.includes(currentRequestedViaFilter)) : inWindow;
+    if (shown.length === 0) continue;
+    entries.push({ item: it, events: shown, latestAt, seen: !!seenMap[it.key] && seenMap[it.key] >= latestAt });
+  }
+
+  const byKind = kind => entries
+    .map(en => ({ ...en, events: kind === 'all' ? en.events : en.events.filter(e => e.type === kind) }))
+    .filter(en => en.events.length > 0);
+  const unseenCount = kind => byKind(kind).filter(en => !en.seen).length;
+
+  const list = byKind(currentMentionFilter).sort((a, b) => new Date(b.events[0].at) - new Date(a.events[0].at));
+  return {
+    unseen: list.filter(en => !en.seen),
+    seen: list.filter(en => en.seen),
+    counts: { all: unseenCount('all'), tag: unseenCount('tag'), reply: unseenCount('reply') },
+  };
+}
+
+function getMentionSummary() {
+  if (!mentionsLoaded) return { unseen: 0 };
+  return { unseen: computeMentionView().counts.all };
+}
+
+function mentionTypeIcon(it) {
+  return it.type === 'pr' ? octicon('git-pull-request', 14) : octicon('comment', 14);
+}
+
+function renderMentionCard(en) {
+  const it = en.item;
+  const e = en.events[0];
+  const more = en.events.length - 1;
+  const teams = e.via.filter(v => v !== 'direct');
+  const kindLabel = e.type === 'reply'
+    ? 'Replied to your comment'
+    : e.via.includes('direct') ? 'Tagged you' : `Tagged @${teams.join(', @')}`;
+  const kindIcon = e.type === 'reply' ? octicon('comment', 12) : octicon('bell', 12);
+  const stateLabel = it.state === 'MERGED' ? 'Merged' : it.state === 'CLOSED' ? 'Closed' : '';
+  const key = escapeHtml(it.key);
+  const actionBtn = en.seen
+    ? `<button class="pr-dismiss" style="opacity:1;" onclick="restoreMention('${key}')" title="Restore" aria-label="Restore">${octicon('arrow-undo', 12)}</button>`
+    : `<button class="pr-dismiss" onclick="markMentionSeen('${key}', '${escapeHtml(en.latestAt)}')" title="Mark as seen. It comes back if something newer happens." aria-label="Mark as seen">${octicon('x', 12)}</button>`;
+
+  return `
+    <li class="pr-card ${en.seen ? 'mention-seen' : 'mention-new'}">
+      ${actionBtn}
+      <div class="pr-body">
+        <div class="pr-title-row">
+          <span class="mention-type">${mentionTypeIcon(it)}</span><span class="pr-number">#${it.number}</span><a class="pr-title" href="${escapeHtml(it.url)}" target="_blank" rel="noopener">${escapeHtml(it.title)}</a>
+        </div>
+        <div class="mention-row">
+          <span class="mention-kind ${e.type === 'reply' ? 'reply' : 'tag'}">${kindIcon} ${escapeHtml(kindLabel)}</span>
+          <span class="mention-where">${escapeHtml(e.where)}</span>
+          ${more > 0 ? `<span class="mention-where">+${more} more</span>` : ''}
+          ${stateLabel ? `<span class="pr-label">${stateLabel}</span>` : ''}
+        </div>
+        <div class="mention-quote"><strong>@${escapeHtml(e.author)}</strong> ${escapeHtml(e.snippet)}</div>
+      </div>
+      <div class="pr-right mention-right">
+        <div class="pr-updated">${timeAgo(e.at)}</div>
+        <a class="mention-open" href="${escapeHtml(e.url)}" target="_blank" rel="noopener">Open comment</a>
+      </div>
+    </li>`;
+}
+
+function renderMentionsGrouped(entries) {
+  const grouped = new Map();
+  for (const en of entries) {
+    if (!grouped.has(en.item.repo)) grouped.set(en.item.repo, []);
+    grouped.get(en.item.repo).push(en);
+  }
+  let html = '<ul class="pr-list">';
+  for (const [repo, list] of grouped) {
+    html += `<li class="repo-group-header" style="cursor:default;">
+      <a href="https://github.com/${escapeHtml(repo)}" target="_blank">${escapeHtml(repo)}</a>
+      <span class="repo-count">${list.length}</span>
+    </li>`;
+    html += list.map(renderMentionCard).join('');
+  }
+  return html + '</ul>';
+}
+
+function renderMentions() {
+  const container = document.getElementById('mentions-container');
+  const countEl = document.getElementById('vcount-mentions');
+  if (!container || !countEl) return;
+
+  if (!mentionsLoaded) {
+    countEl.textContent = '0';
+    container.innerHTML = mentionsFetchFailed
+      ? `<div class="error-msg">${octicon('alert', 14)} Could not load mentions. They will be retried on the next refresh.</div>`
+      : '<div class="loading"><div class="spinner"></div><br>Loading mentions...</div>';
+    return;
+  }
+
+  const view = computeMentionView();
+  countEl.textContent = view.counts.all;
+  countEl.className = `view-tab-count${view.counts.all > 0 ? ' has-attention' : ''}`;
+  document.getElementById('mcount-all').textContent = view.counts.all;
+  document.getElementById('mcount-tag').textContent = view.counts.tag;
+  document.getElementById('mcount-reply').textContent = view.counts.reply;
+
+  const days = getMentionsWindowDays();
+  let html = '';
+  if (view.unseen.length === 0 && view.seen.length === 0) {
+    html = `
+      <div class="blankslate">
+        <div class="blankslate-octicon">${octicon('smiley', 32)}</div>
+        <h3>No mentions</h3>
+        <p>Nobody has tagged you or your teams, or replied to your review comments, in the last ${days} days.</p>
+      </div>`;
+  } else if (view.unseen.length === 0) {
+    html = `
+      <div class="blankslate">
+        <div class="blankslate-octicon">${octicon('smiley', 32)}</div>
+        <h3>All caught up</h3>
+        <p>You have seen every mention from the last ${days} days.</p>
+      </div>`;
+  } else {
+    html = renderMentionsGrouped(view.unseen);
+  }
+
+  if (view.seen.length > 0) {
+    const arrowClass = mentionsSeenExpanded ? 'arrow open' : 'arrow';
+    html += `<div class="dismissed-section">
+      <button class="dismissed-toggle" onclick="toggleMentionsSeenSection()">
+        <span class="${arrowClass}">${octicon('chevron-right', 12)}</span>
+        ${view.seen.length} seen
+      </button>
+      ${mentionsSeenExpanded ? renderMentionsGrouped(view.seen) : ''}
+    </div>`;
+  }
   container.innerHTML = html;
 }
 

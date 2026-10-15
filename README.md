@@ -25,12 +25,25 @@ GitHub's built-in search can tell you which PRs you're "involved" in, but can't 
 - **Review & CI status**: Shows the overall review decision (approved, changes requested, review required) and CI state per PR
 - **Reviewer chips**: See who has reviewed, commented, or is still pending on each of your PRs
 - **Collapsible repo sections**: Same expand/collapse per repo as the Review Requests tab
+- **Merge queue status**: A PR in the GitHub merge queue shows a **Queued** chip at the top of its status chips, with its position and estimated time when GitHub provides them. A queued PR is dimmed because there's nothing to do but wait, and it doesn't count as needing attention.
+- **Queue problems**: A **Queue blocked** chip appears when GitHub reports the queued PR as unmergeable. A **Removed from queue** chip appears when GitHub took the PR out of the queue (for example after failed checks) and you haven't pushed since. Both are highlighted as needing attention.
+
+### Mentions tab
+- **Tags**: Finds issues and PRs where someone wrote `@you` or `@org/team` for one of your tracked teams, in a description, a comment, a review, or a review comment. Tags inside code blocks, inline code, and quoted lines don't count.
+- **Replies**: Finds replies to your review comments, in review threads that are still unresolved. A flat comment on the same issue or PR doesn't count as a reply unless it tags you or your team.
+- **Filters**: Switch between all mentions, tags only, and replies only.
+- **Clears when you answer**: A mention leaves the list when you post on the same issue or PR after it.
+- **Mark as seen**: Select the close button on a card to dim it. A newer mention on the same item brings it back.
+- **No duplicates with My PRs**: Mentions on your own open PRs are hidden because the **My PRs** tab already flags responses from others. Mentions on PRs in **Review requests** are still shown.
+- **Respects your teams bar**: Muted and excluded teams don't produce mentions, and bot accounts are ignored.
+- **Limitation**: Discussions aren't covered yet. The GitHub search API doesn't return them for the `mentions:` qualifier.
 
 ### General
-- **Settings panel**: Two configuration options (gear icon in the header):
-  - **Bot/service accounts**: Accounts to ignore when detecting new activity on your PRs
+- **Settings panel**: Three configuration options (gear icon in the header):
+  - **Bot/service accounts**: Accounts to ignore when detecting new activity on your PRs and new mentions
+  - **Mentions time window**: How far back the **Mentions** tab looks. Select 7, 14 (default), 30, or 60 days.
   - **Team tag exclusions**: Teams you never want to track — they are removed from the teams bar and their review requests are hidden from the dashboard. You can only exclude teams you belong to; your own handle cannot be excluded.
-- **Draft toggle**: Show or hide draft PRs with a single click (shared across both tabs)
+- **Draft control**: Select **Show**, **Hide**, or **Only** to see all PRs, no drafts, or only drafts. The choice is shared across the **Review requests** and **My PRs** tabs, and doesn't apply to **Mentions**.
 - **Light & dark theme**: Light theme by default, with a toggle to switch to dark mode (persisted)
 - **Accessible label colors**: Label colors are automatically adjusted for contrast based on the active theme
 - **Auto-refreshes** every 5 minutes (configurable)
@@ -96,6 +109,22 @@ Fetches PRs where `author:USERNAME` or `assignee:USERNAME`, then enriches each w
 - CI state and reviewer chips
 
 The "needs attention" logic ignores bot accounts (GitHub Apps, `[bot]`-suffixed logins, and any accounts you add in Settings) so that CI noise never triggers a false alert.
+
+For the merge queue, each PR also requests `mergeQueueEntry` (position, state, estimated time to merge) and the latest `AddedToMergeQueueEvent` or `RemovedFromMergeQueueEvent` from its timeline. A PR with no queue entry whose latest queue event is a removal, and that has no commit after it, gets the **Removed from queue** chip. A manual dequeue looks the same as a removal by GitHub.
+
+### Mentions tab
+
+Mentions use two steps to stay within GitHub's rate limits.
+
+1. **List candidates cheaply.** Three kinds of searches return only item IDs and update times:
+   - `mentions:USERNAME` for items that tag you
+   - `commenter:USERNAME` for items where you commented, which is where replies can happen
+   - `team:ORG/TEAM` for items that tag one of your teams, one query per tracked team
+
+   Each search is limited to items updated inside your mentions time window.
+2. **Load details only for items that changed.** The dashboard remembers the update time of each item while the page is open. It requests comments and review threads only for IDs whose update time changed since the last refresh.
+
+The dashboard then finds tags and replies in the loaded text. It reads the last 20 comments of each item and the last 30 review threads (the first 10 comments of each thread), so a very long conversation can hide older events. A description tag uses the time of the last edit, so editing a description that tags you can bring the mention back.
 
 ## Privacy
 
