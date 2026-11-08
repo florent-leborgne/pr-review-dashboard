@@ -51,6 +51,7 @@ GitHub's built-in search can tell you which PRs you're "involved" in, but can't 
 - **Accessible label colors**: Label colors are automatically adjusted for contrast based on the active theme
 - **Auto-refreshes** every 5 minutes (configurable)
 - **Parallel loading**: Review requests, My PRs, and Mentions load at the same time, and each tab appears as soon as its own data is ready. The Mentions tab also shows its last result right away on your next visit while fresh data loads.
+- **Your GitHub availability**: The header reads the status of the account that owns your token, independently of the username you track. A red no-entry icon and **Busy** label indicate limited availability; otherwise a compact green dot appears without a label. Click it for your status message and **Edit status on GitHub**, which opens your profile so you can change it there. A divider keeps this separate from the GitHub service-incident badge. Failed status requests show a neutral indicator, and expired statuses clear automatically. Status refreshes with the dashboard and when you return to the tab.
 - **Zero dependencies**: Single HTML file, no build step, no server
 
 ## Usage
