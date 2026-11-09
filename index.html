@@ -237,6 +237,39 @@
     display: none;
   }
 
+  /* Personal availability stays beside the avatar, apart from service incidents. */
+  .user-account { display: flex; align-items: center; gap: 8px; border-left: 1px solid var(--border); padding-left: 14px; margin-left: 6px; }
+  .user-status { position: relative; }
+  .user-status-button {
+    list-style: none;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    min-width: 36px; min-height: 36px; padding: 7px 10px;
+    border: 1px solid var(--border); border-radius: 8px;
+    background: var(--surface); color: var(--text-muted);
+    font-size: 13px; font-weight: 600; cursor: pointer;
+  }
+  .user-status-button::-webkit-details-marker { display: none; }
+  .user-status-button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .user-status-button.is-busy { background: var(--badge-red-bg); border-color: var(--badge-red-ring); color: var(--red); }
+  .user-status-button.is-normal { background: var(--badge-green-bg); border-color: var(--green); padding: 7px; }
+  .user-status-sign { display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 18px; border-radius: 50%; background: var(--text-muted); flex-shrink: 0; }
+  .is-busy .user-status-sign { background: var(--red); }
+  .is-busy .user-status-sign::after { content: ''; width: 10px; height: 3px; border-radius: 1px; background: var(--surface); }
+  .is-normal .user-status-sign { background: var(--green); }
+  .is-unknown .user-status-sign { background: transparent; border: 2px solid var(--text-muted); }
+  .user-status-popover {
+    position: absolute; right: 0; top: calc(100% + 8px); z-index: 110;
+    width: min(280px, calc(100vw - 72px)); padding: 16px;
+    background: var(--surface); color: var(--text); border: 1px solid var(--border);
+    border-radius: 8px; box-shadow: var(--shadow-card-hover); overflow-wrap: anywhere;
+  }
+  .user-status-identity { font-size: 12px; color: var(--text-muted); margin-bottom: 12px; }
+  .user-status-heading { font-size: 14px; font-weight: 600; }
+  .user-status-message { font-size: 13px; color: var(--text-muted); margin-top: 6px; white-space: pre-wrap; }
+  .user-status-edit { display: inline-flex; align-items: center; gap: 8px; margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--border-muted); width: 100%; font-size: 13px; }
+  .user-status-edit[hidden] { display: none; }
+  @media (pointer: coarse) { .user-status-button { min-width: 44px; min-height: 44px; } }
+
   /* ── Hero greeting ─────────────────────────────────── */
   .hero {
     text-align: center;
@@ -1338,6 +1371,10 @@
 
   /* ── Responsive ────────────────────────────────────── */
   @media (max-width: 720px) {
+    .app-header-inner { flex-wrap: wrap; }
+    .header-actions { flex-wrap: wrap; justify-content: flex-end; margin-left: auto; max-width: 100%; }
+    .header-actions .status-text { white-space: normal; }
+    .gh-status-badge { white-space: normal; }
     .app-header-inner { padding: 10px 14px; }
     .container { padding: 12px 14px 24px; }
     .pr-card { grid-template-columns: 1fr; gap: 10px; }
@@ -1364,7 +1401,20 @@
       <button class="icon-btn" id="refresh-btn" onclick="fetchPRs()" title="Refresh" aria-label="Refresh"></button>
       <button class="icon-btn" id="theme-toggle" onclick="toggleTheme()" title="Toggle theme" aria-label="Toggle theme"></button>
       <button class="icon-btn" id="settings-btn" onclick="openSettings()" title="Settings" aria-label="Settings"></button>
-      <img class="avatar" id="user-avatar" alt="" />
+      <div class="user-account">
+        <details class="user-status" id="user-status">
+          <summary class="user-status-button is-unknown" id="user-status-button" aria-label="Loading GitHub status" title="View your GitHub status">
+            <span class="user-status-sign" aria-hidden="true"></span><span id="user-status-label" hidden>Busy</span>
+          </summary>
+          <div class="user-status-popover">
+            <div class="user-status-identity" id="user-status-identity">Signed in</div>
+            <div class="user-status-heading" id="user-status-heading" aria-live="polite">Loading GitHub status…</div>
+            <div class="user-status-message" id="user-status-message"></div>
+            <a class="user-status-edit" id="user-status-edit" target="_blank" rel="noopener noreferrer" hidden>Edit status on GitHub ↗</a>
+          </div>
+        </details>
+        <img class="avatar" id="user-avatar" alt="" />
+      </div>
       <button class="icon-btn" id="logout-btn" onclick="logout()" title="Sign out" aria-label="Sign out"></button>
     </div>
   </div>
@@ -1732,6 +1782,7 @@ function paintStaticIcons() {
 
 function init() {
   paintStaticIcons();
+  setupUserStatus();
   const token = localStorage.getItem(STORAGE_KEYS.token);
   if (token) {
     showDashboard();
@@ -1800,6 +1851,7 @@ function paintViewTabIcons() {
 async function loadUserProfile() {
   try {
     const user = await apiGet('/user');
+    signedInLogin = user.login;
     const img = document.getElementById('user-avatar');
     if (img && user.avatar_url) {
       img.src = user.avatar_url;
@@ -1810,6 +1862,81 @@ async function loadUserProfile() {
   } catch (e) {
     // Non-fatal
   }
+}
+
+/* ── Token owner's personal GitHub status ───────────────── */
+let userAvailability = null; // null means unknown, not available
+let signedInLogin = '';
+let userStatusRequest = 0;
+let userStatusExpiryTimer = null;
+
+function getUserAvailability(status, now = Date.now()) {
+  if (status?.expiresAt && Date.parse(status.expiresAt) <= now) status = null;
+  return {
+    busy: status?.indicatesLimitedAvailability === true,
+    message: status?.message || '',
+    emoji: status?.emoji && !status.emoji.startsWith(':') ? status.emoji : '',
+  };
+}
+
+function renderUserStatus() {
+  const button = document.getElementById('user-status-button');
+  if (!button) return;
+  const known = userAvailability !== null;
+  const status = getUserAvailability(userAvailability?.status);
+  button.className = `user-status-button ${!known ? 'is-unknown' : status.busy ? 'is-busy' : 'is-normal'}`;
+  button.setAttribute('aria-label', !known ? 'GitHub status unavailable' : status.busy ? 'Busy — view your GitHub status' : 'View your GitHub status');
+  document.getElementById('user-status-label').hidden = !known || !status.busy;
+  const login = userAvailability?.login || signedInLogin;
+  document.getElementById('user-status-identity').textContent = login ? `Signed in as @${login}` : 'Signed in';
+  document.getElementById('user-status-heading').textContent = !known ? 'Status unavailable' : status.busy ? 'Busy · Limited availability' : 'Your GitHub status';
+  document.getElementById('user-status-message').textContent = !known
+    ? 'Could not load your status. It will be retried on the next refresh.'
+    : [status.emoji, status.message].filter(Boolean).join(' ') || (status.busy ? 'You have limited availability on GitHub.' : 'No status message set.');
+  const link = document.getElementById('user-status-edit');
+  link.hidden = !login;
+  if (login) link.href = `https://github.com/${encodeURIComponent(login)}`;
+
+  clearTimeout(userStatusExpiryTimer);
+  const expiresAt = Date.parse(userAvailability?.status?.expiresAt);
+  if (expiresAt > Date.now()) {
+    userStatusExpiryTimer = setTimeout(renderUserStatus, Math.min(expiresAt - Date.now(), 2147483647));
+  }
+}
+
+async function loadUserStatus() {
+  const token = localStorage.getItem(STORAGE_KEYS.token);
+  if (!token) return;
+  const request = ++userStatusRequest;
+  try {
+    const data = await graphql(`query {
+      viewer { login status { message emoji indicatesLimitedAvailability expiresAt } }
+    }`);
+    if (request !== userStatusRequest || token !== localStorage.getItem(STORAGE_KEYS.token)) return;
+    if (!data.viewer?.login) throw new Error('Missing token owner');
+    userAvailability = data.viewer;
+    signedInLogin = data.viewer.login;
+  } catch {
+    if (request !== userStatusRequest || token !== localStorage.getItem(STORAGE_KEYS.token)) return;
+    userAvailability = null;
+  }
+  renderUserStatus();
+}
+
+function setupUserStatus() {
+  const details = document.getElementById('user-status');
+  document.addEventListener('click', event => {
+    if (details.open && !details.contains(event.target)) details.open = false;
+  });
+  document.addEventListener('keydown', event => {
+    if (event.key === 'Escape' && details.open) {
+      details.open = false;
+      document.getElementById('user-status-button').focus();
+    }
+  });
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') loadUserStatus();
+  });
 }
 
 /* ── Hero greeting ─────────────────────────────────────── */
@@ -2622,6 +2749,7 @@ function setLoadingState(message, detail) {
 }
 
 async function fetchPRs() {
+  loadUserStatus(); // independent: a profile failure must never delay reviews
   const username = localStorage.getItem(STORAGE_KEYS.user);
   const btn = document.getElementById('refresh-btn');
   const errContainer = document.getElementById('error-container');
