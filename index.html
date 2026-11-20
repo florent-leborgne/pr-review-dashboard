@@ -1698,13 +1698,15 @@ function getMutedTeams() {
 function toggleMuteTeam(teamOrDirect) {
   const muted = getMutedTeams();
   const idx = muted.indexOf(teamOrDirect);
-  if (idx >= 0) muted.splice(idx, 1);
+  const unmuted = idx >= 0;
+  if (unmuted) muted.splice(idx, 1);
   else muted.push(teamOrDirect);
   localStorage.setItem(STORAGE_KEYS.mutedTeams, JSON.stringify(muted));
   renderTeamsInfo();
   updateCounts();
   renderPRs();
   renderMentions();
+  if (unmuted && teamOrDirect !== 'direct') refreshMentions();
 }
 
 function getExcludedTeams() {
@@ -1734,6 +1736,7 @@ function removeExcludedTeam(qualified) {
   updateCounts();
   renderPRs();
   renderMentions();
+  refreshMentions();
 }
 
 function getTeamsBarCollapsed() {
@@ -3646,10 +3649,10 @@ function deriveMentionItem(node, me, matchers) {
   };
 }
 
-async function listMentionCandidates(searchQuery) {
+async function listMentionCandidates(searchQuery, maxPages = 5) {
   const nodes = [];
   let cursor = null;
-  for (let page = 0; page < 5; page++) {
+  for (let page = 0; page < maxPages; page++) {
     const data = await graphql(`
       query($q: String!, $cursor: String) {
         search(query: $q, type: ISSUE, first: 100, after: $cursor) {
@@ -3719,14 +3722,26 @@ async function fetchMentions() {
 
   const since = new Date(Date.now() - getMentionsWindowDays() * 86400000).toISOString().slice(0, 10);
   const base = `archived:false updated:>=${since}`;
+  const hiddenTeams = new Set([...getMutedTeams(), ...getExcludedTeams()]);
+  const activeTeams = userTeams.filter(t => !hiddenTeams.has(t.qualified));
+  // GitHub's mentions: and team: search qualifiers miss inline PR review comments, so pair
+  // them with a bounded in:comments text search and let deriveMentionItem() validate matches.
   const queries = [
-    { label: 'tagged you', q: `mentions:${username} ${base}` },
-    { label: 'you commented', q: `commenter:${username} ${base}` },
-    ...userTeams.map(t => ({ label: `team: ${t.qualified}`, q: `team:${t.qualified} ${base}` })),
+    { label: 'tagged you', q: `mentions:${username} ${base}`, maxPages: 5 },
+    { label: 'tagged you in PR comments', q: `"@${username}" in:comments is:pr ${base} sort:updated-desc`, maxPages: 2 },
+    { label: 'you commented', q: `commenter:${username} ${base}`, prOnly: true, maxPages: 5 },
+    ...activeTeams.flatMap(t => {
+      const org = t.org || t.qualified.split('/')[0];
+      const orgScope = org ? ` org:${org}` : '';
+      return [
+        { label: `team: ${t.qualified}`, q: `team:${t.qualified} ${base}`, maxPages: 5 },
+        { label: `team PR comments: ${t.qualified}`, q: `"@${t.qualified}" in:comments is:pr${orgScope} ${base} sort:updated-desc`, maxPages: 2 },
+      ];
+    }),
   ];
 
   const results = await Promise.all(queries.map(x =>
-    listMentionCandidates(x.q).catch(err => {
+    listMentionCandidates(x.q, x.maxPages).catch(err => {
       console.warn(`Mentions search failed for "${x.label}":`, err);
       return null; // null = failed, [] = genuinely empty
     })
@@ -3736,16 +3751,17 @@ async function fetchMentions() {
     return;
   }
 
-  // The second search (items you commented on) exists to find replies, and only a PR has
-  // review threads. A commented issue that no tag search found has nothing to show.
+  // The commenter: search exists to find replies, and only a PR has review threads.
+  // A commented issue that no tag search found has nothing to show.
   const candidates = new Map();
   const needsDetails = new Set();
   results.forEach((batch, i) => {
     if (!batch) return;
+    const prOnly = !!queries[i].prOnly;
     for (const n of batch) {
       if (!n?.id) continue;
       candidates.set(n.id, n.updatedAt);
-      if (i !== 1 || n.__typename === 'PullRequest') needsDetails.add(n.id);
+      if (!prOnly || n.__typename === 'PullRequest') needsDetails.add(n.id);
     }
   });
 

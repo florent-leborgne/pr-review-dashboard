@@ -121,12 +121,12 @@ For the merge queue, each PR also requests `mergeQueueEntry` (position, state, e
 
 Mentions use two steps to stay within GitHub's rate limits.
 
-1. **List candidates cheaply.** Three kinds of searches return only item IDs and update times:
-   - `mentions:USERNAME` for items that tag you
+1. **List candidates cheaply.** Search queries return only item IDs and update times:
+   - `mentions:USERNAME` for items that tag you, plus `"@USERNAME" in:comments is:pr` to catch inline PR review comments that GitHub's `mentions:` qualifier skips
    - `commenter:USERNAME` for items where you commented, which is where replies can happen
-   - `team:ORG/TEAM` for items that tag one of your teams, one query per tracked team
+   - `team:ORG/TEAM` and `"@ORG/TEAM" in:comments is:pr org:ORG` for each active (non-muted, non-excluded) team
 
-   Each search is limited to items updated inside your mentions time window.
+   Each search is limited to items updated inside your mentions time window. Inline PR comment text searches sort by most recently updated and cap at 200 PRs per query, and the parser validates every match against the same rules as other mentions.
 2. **Load details only for items that changed.** The dashboard saves the update time of each item in your browser. It requests comments and review threads only for IDs whose update time changed since the last refresh, in small batches that run in parallel. An issue you only commented on is skipped, because replies exist only in PR review threads.
 
 The dashboard then finds tags and replies in the loaded text. It reads the last 20 comments of each item and the last 30 review threads (the first 10 comments of each thread), so a very long conversation can hide older events. A description tag shows the time of the last edit. Dismissing a mention saves which comments and tags you dismissed, not a time, so later edits of the same description don't bring it back.
