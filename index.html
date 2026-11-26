@@ -533,6 +533,16 @@
     color: var(--text-muted);
   }
 
+  /* Recently approved is not part of All, so a divider sets it apart. */
+  .filter-tab-divider { width: 1px; align-self: stretch; margin: 4px 4px; background: var(--border); }
+  .filter-tab .count.has-attention,
+  .filter-tab.active .count.has-attention {
+    background: rgba(232, 161, 0, 0.15);
+    color: var(--gold-strong);
+    border-color: rgba(232, 161, 0, 0.3);
+    font-weight: 600;
+  }
+
   .auto-refresh-toggle {
     font-size: 12px;
     color: var(--text-dim);
@@ -1211,6 +1221,23 @@
     overflow: hidden;
   }
   .mention-quote strong { color: var(--text); font-weight: 600; }
+
+  /* ── Recently approved ─────────────────────────────── */
+  .ra-intro { font-size: 13px; color: var(--text-muted); margin: 0 0 12px; }
+  .ra-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 6px; }
+  .ra-chip { display: inline-flex; align-items: center; gap: 4px; padding: 2px 9px; border-radius: 10px; font-size: 11px; font-weight: 600; white-space: nowrap; }
+  .ra-chip.open { background: var(--badge-yellow-bg); color: var(--gold-strong); }
+  .ra-chip.ok { background: var(--badge-green-bg); color: var(--green); }
+  .ra-chip.none { background: var(--badge-muted-bg); color: var(--text-dim); font-weight: 500; }
+  .ra-state { display: inline-flex; align-items: center; gap: 4px; padding: 2px 9px; border-radius: 10px; font-size: 12px; font-weight: 600; white-space: nowrap; }
+  .ra-state.open { background: var(--badge-muted-bg); color: var(--text-muted); }
+  .ra-state.merged { background: color-mix(in srgb, var(--purple) 12%, transparent); color: var(--purple); }
+  .ra-state.closed { background: var(--badge-red-bg); color: var(--red); }
+  .ra-chip .octicon, .ra-state .octicon { fill: currentColor; }
+  a.mention-quote { text-decoration: none; }
+  a.mention-quote:hover strong { text-decoration: underline; }
+  .mention-quote.ack { opacity: 0.75; }
+  .ack-label { font-size: 10px; font-weight: 600; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.03em; margin-left: 6px; }
   /* Two buttons of equal weight and size: Open comment at the top, Dismiss at the bottom. */
   .mention-time { font-size: 12px; color: var(--text-dim); white-space: nowrap; }
   .mention-time + .mention-where::before { content: "\00b7\00a0"; color: var(--text-dim); }
@@ -1395,6 +1422,7 @@
     .pr-card { grid-template-columns: 1fr; gap: 10px; }
     .pr-right { text-align: left; flex-direction: row; align-items: center; flex-wrap: wrap; }
     .view-tab-meta { width: 100%; padding-top: 6px; padding-bottom: 4px; }
+    .filter-tabs { flex-wrap: wrap; }
     .hero-text { font-size: 15px; }
     .brand span.brand-title { display: none; }
   }
@@ -1513,6 +1541,8 @@
           <button class="filter-tab" data-filter="NONE">Pending review <span class="count" id="count-pending">0</span></button>
           <button class="filter-tab" data-filter="COMMENTED">Commented <span class="count" id="count-commented">0</span></button>
           <button class="filter-tab" data-filter="CHANGES_REQUESTED">Changes requested <span class="count" id="count-changes">0</span></button>
+          <span class="filter-tab-divider" aria-hidden="true"></span>
+          <button class="filter-tab" data-filter="approved" title="PRs you approved recently. Not included in All.">Recently approved <span class="count" id="count-approved">0</span></button>
         </div>
       </div>
 
@@ -1560,7 +1590,7 @@
 </footer>
 
 <script>
-const STORAGE_KEYS = { token: 'prd_token', user: 'prd_user', teams: 'prd_teams', theme: 'prd_theme', dismissed: 'prd_dismissed', collapsedRepos: 'prd_collapsed_repos', collapsedMyRepos: 'prd_collapsed_my_repos', mutedTeams: 'prd_muted_teams', botLogins: 'prd_bot_logins', showDrafts: 'prd_show_drafts', draftMode: 'prd_draft_mode', view: 'prd_view', teamsBarCollapsed: 'prd_teams_bar_collapsed', excludedTeams: 'prd_excluded_teams', mentionsSeen: 'prd_mentions_seen', mentionsWindow: 'prd_mentions_window_days', mentionsCache: 'prd_mentions_cache' };
+const STORAGE_KEYS = { token: 'prd_token', user: 'prd_user', teams: 'prd_teams', theme: 'prd_theme', dismissed: 'prd_dismissed', collapsedRepos: 'prd_collapsed_repos', collapsedMyRepos: 'prd_collapsed_my_repos', mutedTeams: 'prd_muted_teams', botLogins: 'prd_bot_logins', showDrafts: 'prd_show_drafts', draftMode: 'prd_draft_mode', view: 'prd_view', teamsBarCollapsed: 'prd_teams_bar_collapsed', excludedTeams: 'prd_excluded_teams', mentionsSeen: 'prd_mentions_seen', mentionsWindow: 'prd_mentions_window_days', mentionsCache: 'prd_mentions_cache', approvedWindow: 'prd_approved_window_days', approvedDismissed: 'prd_approved_dismissed' };
 const DEFAULT_BOT_LOGINS = ['elasticmachine', 'macroscopeapp'];
 let allPRs = [];
 let currentFilter = 'all';
@@ -2532,6 +2562,15 @@ function renderSettingsBody() {
       </select>
     </div>
     <div class="settings-section">
+      <div class="settings-section-title">Recently approved time window</div>
+      <div class="settings-section-desc">
+        The Recently approved filter in Review requests shows PRs you approved within this window. A merged or closed PR leaves earlier, once all your comments on it are resolved.
+      </div>
+      <select id="approved-window-select" onchange="saveApprovedWindow(this.value)" style="font-size:12px; padding:3px 6px; border-radius:6px; border:1px solid var(--border-muted); background:var(--surface); color:var(--text);">
+        ${APPROVED_WINDOW_OPTIONS.map(d => `<option value="${d}"${d === getApprovedWindowDays() ? ' selected' : ''}>Last ${d} days${d === 7 ? ' (default)' : ''}</option>`).join('')}
+      </select>
+    </div>
+    <div class="settings-section">
       <div class="settings-section-title">Team tag exclusions</div>
       <div class="settings-section-desc">
         Teams listed here will not appear in the team bar, and review requests sent only to those teams will be hidden from your dashboard.
@@ -2824,6 +2863,7 @@ async function fetchPRs() {
       });
     myPRsReady = myPromise;
     refreshMentions();
+    refreshApproved();
 
     const results = await Promise.all(
       queries.map(q => searchPRs(q.query).catch(err => {
@@ -3052,6 +3092,7 @@ function updateCounts() {
   document.getElementById('count-changes').textContent = counts.CHANGES_REQUESTED;
   const vcountReview = document.getElementById('vcount-review');
   if (vcountReview) vcountReview.textContent = counts.all;
+  updateApprovedCount();
 }
 
 function renderGroupedList(prs, isDismissedList) {
@@ -3082,6 +3123,10 @@ function renderGroupedList(prs, isDismissedList) {
 
 function renderPRs() {
   const container = document.getElementById('pr-container');
+  if (currentFilter === 'approved') {
+    container.innerHTML = renderApprovedList();
+    return;
+  }
   const { active, dismissed } = getViaFilteredPRs();
   const filtered = currentFilter === 'all'
     ? active
@@ -3422,6 +3467,379 @@ function renderMyPRs() {
   }
   html += '</ul>';
   container.innerHTML = html;
+}
+
+/* ── Recently approved ─────────────────────────────────────
+   A filter under Review requests, outside All. One search lists PRs you reviewed
+   inside the window, open or not. A PR stays while it's open, or while one of the
+   review threads you started is unresolved. */
+const APPROVED_WINDOW_OPTIONS = [7, 14, 30];
+let approvedItems = [];
+let approvedLoaded = false;
+let approvedFetchFailed = false;
+let approvedFetching = false;
+let approvedRefetchQueued = false;
+let approvedDismissedExpanded = false;
+
+function getApprovedWindowDays() {
+  const n = parseInt(localStorage.getItem(STORAGE_KEYS.approvedWindow) || '', 10);
+  return APPROVED_WINDOW_OPTIONS.includes(n) ? n : 7;
+}
+
+function saveApprovedWindow(value) {
+  const n = parseInt(value, 10);
+  if (!APPROVED_WINDOW_OPTIONS.includes(n)) return;
+  localStorage.setItem(STORAGE_KEYS.approvedWindow, String(n));
+  refreshApproved(); // the search itself is bounded by the window
+}
+
+// A reply that only acknowledges a comment ("Done in 3f9c2e1", "Addressed, thanks")
+// is made of these words plus links, commit hashes, and emoji. A question never is.
+const ACK_WORDS = new Set(`
+  done fixed fix addressed address updated update changed change applied apply accepted accept
+  resolved resolve committed pushed removed reworded rephrased adjusted tweaked
+  good great nice catch thanks thank thx ty you ok okay sure yes yep yup agreed agree makes sense
+  will do in with via here now see commit suggestion suggestions comment comments feedback
+  the this that it them these those both all everything one ones as suggested per your
+  a an and to for of i i've ive i'll ill have has been just
+`.trim().split(/\s+/));
+
+function isAckReply(body) {
+  if (!(body || '').trim() || body.length > 160) return false;
+  const text = stripQuotedAndCode(body).replace(/[\u2018\u2019]/g, "'");
+  if (text.includes('?')) return false;
+  const words = text
+    .replace(/https?:\/\/\S+/g, ' ')
+    .replace(/:[a-z0-9_+-]+:/gi, ' ')
+    .replace(/\b[0-9a-f]{7,40}\b/gi, ' ')
+    .replace(/[@#][\w/-]+/g, ' ')
+    .toLowerCase()
+    .match(/[a-z']+/g) || [];
+  return words.every(w => ACK_WORDS.has(w));
+}
+
+function ciStateOf(pr) {
+  const raw = pr.commits?.nodes?.[0]?.commit?.statusCheckRollup?.state;
+  if (raw === 'SUCCESS') return 'success';
+  if (raw === 'FAILURE' || raw === 'ERROR') return 'failure';
+  if (raw === 'PENDING' || raw === 'EXPECTED' || raw === 'STALE') return 'pending';
+  return null;
+}
+
+async function searchApprovedPRs(searchQuery, maxPages = 8) {
+  const prs = [];
+  let cursor = null;
+  for (let page = 0; page < maxPages; page++) {
+    const data = await graphql(`
+      query($q: String!, $cursor: String) {
+        search(query: $q, type: ISSUE, first: 25, after: $cursor) {
+          pageInfo { hasNextPage endCursor }
+          nodes {
+            ... on PullRequest {
+              number
+              title
+              url
+              state
+              mergedAt
+              closedAt
+              updatedAt
+              isDraft
+              mergeQueueEntry { position state estimatedTimeToMerge }
+              author { login }
+              repository { nameWithOwner isArchived }
+              reviews(last: 100) {
+                nodes { author { login } state createdAt }
+              }
+              reviewThreads(last: 50) {
+                nodes {
+                  isResolved
+                  first: comments(first: 1) { nodes { author { login } } }
+                  latest: comments(last: 3) {
+                    nodes { author { login __typename } body createdAt url state }
+                  }
+                }
+              }
+              commits(last: 1) {
+                nodes { commit { statusCheckRollup { state } } }
+              }
+            }
+          }
+        }
+      }
+    `, { q: searchQuery, cursor });
+    prs.push(...data.search.nodes.filter(Boolean));
+    if (!data.search.pageInfo.hasNextPage) break;
+    cursor = data.search.pageInfo.endCursor;
+  }
+  return prs;
+}
+
+// Turn one searched PR into a Recently approved card model, or null when it doesn't belong.
+function deriveApprovedItem(pr, me, now, windowDays) {
+  if (!pr?.url || !pr.repository || pr.repository.isArchived || pr.author?.login === me) return null;
+  // A later comment doesn't revoke an approval. A dismissed approval has the DISMISSED state.
+  const { submitted } = splitMyReviews(pr.reviews?.nodes, me);
+  const latestDecisive = [...submitted].reverse().find(r => r.state === 'APPROVED' || r.state === 'CHANGES_REQUESTED');
+  if (latestDecisive?.state !== 'APPROVED') return null;
+  if (Date.parse(latestDecisive.createdAt) < now - windowDays * 86400000) return null;
+
+  const myThreads = (pr.reviewThreads?.nodes || []).filter(t => t.first?.nodes?.[0]?.author?.login === me);
+  const resolved = myThreads.filter(t => t.isResolved).length;
+  const replies = [];
+  for (const t of myThreads) {
+    if (t.isResolved) continue;
+    // Your unsubmitted answer is not an answer yet.
+    const last = (t.latest?.nodes || []).filter(c => c.state !== 'PENDING').pop();
+    if (!last || last.author?.login === me || !isHumanActor(last.author)) continue;
+    replies.push({ author: last.author.login, body: last.body || '', at: last.createdAt, url: last.url, ack: isAckReply(last.body) });
+  }
+  replies.sort((a, b) => b.at.localeCompare(a.at));
+
+  const state = pr.state === 'MERGED' || pr.state === 'CLOSED' ? pr.state : 'OPEN';
+  if (state !== 'OPEN' && resolved === myThreads.length) return null;
+
+  return {
+    key: `${pr.repository.nameWithOwner}#${pr.number}`,
+    number: pr.number,
+    title: pr.title,
+    url: pr.url,
+    repo: pr.repository.nameWithOwner,
+    author: pr.author?.login || '?',
+    isDraft: !!pr.isDraft,
+    state,
+    mergedAt: pr.mergedAt,
+    closedAt: pr.closedAt,
+    updatedAt: pr.updatedAt,
+    approvedAt: latestDecisive.createdAt,
+    queue: state === 'OPEN' ? buildQueue(pr) : null,
+    ciState: state === 'OPEN' ? ciStateOf(pr) : null,
+    threads: { total: myThreads.length, resolved },
+    replies,
+    needsLook: replies.some(r => !r.ack),
+  };
+}
+
+async function fetchApproved() {
+  const username = localStorage.getItem(STORAGE_KEYS.user);
+  const days = getApprovedWindowDays();
+  // An approval inside the window also updated the PR inside it.
+  const since = new Date(Date.now() - days * 86400000).toISOString().slice(0, 10);
+  const prs = await searchApprovedPRs(`is:pr reviewed-by:${username} -author:${username} updated:>=${since}`);
+  const now = Date.now();
+  const byKey = new Map();
+  for (const pr of prs) {
+    const item = deriveApprovedItem(pr, username, now, days);
+    if (item) byKey.set(item.key, item);
+  }
+  approvedItems = [...byKey.values()];
+  approvedLoaded = true;
+  approvedFetchFailed = false;
+}
+
+async function refreshApproved() {
+  if (approvedFetching) { approvedRefetchQueued = true; return; }
+  approvedFetching = true;
+  try {
+    await fetchApproved();
+  } catch (e) {
+    console.warn('Recently approved fetch failed:', e);
+    if (!approvedLoaded) approvedFetchFailed = true;
+  } finally {
+    approvedFetching = false;
+  }
+  renderApproved();
+  if (approvedRefetchQueued) {
+    approvedRefetchQueued = false;
+    refreshApproved();
+  }
+}
+
+// Dismissal remembers the real replies you had seen. A new real reply brings the card back.
+function getApprovedDismissed() {
+  try { return JSON.parse(localStorage.getItem(STORAGE_KEYS.approvedDismissed) || '{}'); }
+  catch { return {}; }
+}
+
+function realReplyUrls(item) {
+  return item.replies.filter(r => !r.ack).map(r => r.url);
+}
+
+function isApprovedDismissed(item, dismissedMap) {
+  const saved = dismissedMap[item.key];
+  if (!saved) return false;
+  const known = new Set(saved.replies || []);
+  return realReplyUrls(item).every(url => known.has(url));
+}
+
+function dismissApproved(key) {
+  const item = approvedItems.find(it => it.key === key);
+  if (!item) return;
+  const map = getApprovedDismissed();
+  map[key] = { at: new Date().toISOString(), replies: realReplyUrls(item) };
+  const forgetBefore = Date.now() - 60 * 86400000; // longer than the largest window
+  for (const k of Object.keys(map)) {
+    if (Date.parse(map[k].at) < forgetBefore) delete map[k];
+  }
+  localStorage.setItem(STORAGE_KEYS.approvedDismissed, JSON.stringify(map));
+  renderApproved();
+}
+
+function restoreApproved(key) {
+  const map = getApprovedDismissed();
+  delete map[key];
+  localStorage.setItem(STORAGE_KEYS.approvedDismissed, JSON.stringify(map));
+  renderApproved();
+}
+
+function toggleApprovedDismissedSection() {
+  approvedDismissedExpanded = !approvedDismissedExpanded;
+  renderPRs();
+}
+
+function computeApprovedView() {
+  const map = getApprovedDismissed();
+  const active = [];
+  const dismissed = [];
+  for (const it of approvedItems.filter(matchesDraftMode)) {
+    (isApprovedDismissed(it, map) ? dismissed : active).push(it);
+  }
+  const order = (a, b) => (b.needsLook - a.needsLook) || b.approvedAt.localeCompare(a.approvedAt);
+  active.sort(order);
+  dismissed.sort(order);
+  return { active, dismissed, attention: active.filter(it => it.needsLook).length };
+}
+
+function updateApprovedCount() {
+  const el = document.getElementById('count-approved');
+  if (!el) return;
+  const view = computeApprovedView();
+  el.textContent = view.active.length;
+  el.className = `count${view.attention > 0 ? ' has-attention' : ''}`;
+  el.title = view.attention > 0 ? `${view.attention} with a reply to your comments` : '';
+}
+
+function renderApproved() {
+  updateApprovedCount();
+  if (currentFilter === 'approved') renderPRs();
+}
+
+function renderApprovedCard(it, isDismissedCard = false) {
+  const key = escapeHtml(it.key);
+  const stateKey = it.state.toLowerCase();
+  const classes = ['pr-card'];
+  if (stateKey !== 'open') classes.push(`mc-${stateKey}`);
+  if (isDismissedCard) classes.push('dismissed-card');
+  else if (it.needsLook) classes.push('needs-attention');
+  else if (it.queue) classes.push('queued');
+
+  const actionBtn = isDismissedCard
+    ? `<button class="pr-dismiss" style="opacity:1;" onclick="restoreApproved('${key}')" title="Restore" aria-label="Restore">${octicon('arrow-undo', 12)}</button>`
+    : `<button class="pr-dismiss" onclick="dismissApproved('${key}')" title="Dismiss. It comes back if someone replies to one of your comments." aria-label="Dismiss">${octicon('x', 12)}</button>`;
+
+  const typeIcon = stateKey === 'open' ? ''
+    : `<span class="mention-type" title="${stateKey === 'merged' ? 'Merged' : 'Closed'} pull request">${octicon(stateKey === 'merged' ? 'git-merge' : 'git-pull-request-closed', 14)}</span>`;
+  const draft = it.isDraft ? '<span style="color:var(--text-dim);">[Draft]</span> ' : '';
+
+  const { total, resolved } = it.threads;
+  const noun = total === 1 ? 'comment' : 'comments';
+  const threadsChip = total === 0
+    ? '<span class="ra-chip none">No comments from you</span>'
+    : resolved === total
+      ? `<span class="ra-chip ok">${octicon('check', 12)} ${total === 1 ? 'Your comment is resolved' : `All ${total} comments resolved`}</span>`
+      : `<span class="ra-chip open">${octicon('comment', 12)} ${resolved} of ${total} ${noun} resolved</span>`;
+
+  const real = it.replies.filter(r => !r.ack);
+  let replyHtml = '';
+  if (real.length > 0) {
+    const r = real[0];
+    const more = real.length > 1 ? ` · ${real.length - 1} more` : '';
+    replyHtml = `<div class="pr-attention">${octicon('bell', 12)} @${escapeHtml(r.author)} replied · ${timeAgo(r.at)}${more}</div>
+        <a class="mention-quote" href="${escapeHtml(r.url)}" target="_blank" rel="noopener"><strong>@${escapeHtml(r.author)}</strong> ${escapeHtml(makeSnippet(r.body))}</a>`;
+  } else if (it.replies.length > 0) {
+    const r = it.replies[0];
+    replyHtml = `<a class="mention-quote ack" href="${escapeHtml(r.url)}" target="_blank" rel="noopener"><strong>@${escapeHtml(r.author)}</strong> ${escapeHtml(makeSnippet(r.body))}<span class="ack-label">Looks addressed</span></a>`;
+  }
+
+  let stateHtml;
+  if (stateKey === 'merged') {
+    stateHtml = `<span class="ra-state merged">${octicon('git-merge', 12)} Merged ${timeAgo(it.mergedAt)}</span>`;
+  } else if (stateKey === 'closed') {
+    stateHtml = `<span class="ra-state closed">${octicon('git-pull-request-closed', 12)} Closed ${timeAgo(it.closedAt)}</span>`;
+  } else if (it.queue) {
+    stateHtml = renderQueueBadge(it.queue);
+  } else {
+    stateHtml = `<span class="ra-state open">${octicon('git-pull-request', 12)} Open</span>${renderCiBadge(it.ciState)}`;
+  }
+
+  return `
+    <li class="${classes.join(' ')}">
+      ${actionBtn}
+      <div class="pr-body">
+        <div class="pr-title-row">
+          ${typeIcon}<span class="pr-number">#${it.number}</span><a class="pr-title" href="${escapeHtml(it.url)}" target="_blank" rel="noopener">${draft}${escapeHtml(it.title)}</a><button class="pr-copy-btn" title="Copy PR link" aria-label="Copy PR link" onclick="copyPRUrl(this, '${escapeHtml(it.url)}')">${octicon('copy', 13)}</button>
+        </div>
+        <div class="pr-meta">
+          <span>by <a href="https://github.com/${escapeHtml(it.author)}" target="_blank">@${escapeHtml(it.author)}</a></span>
+          <span>you approved ${timeAgo(it.approvedAt)}</span>
+        </div>
+        <div class="ra-row">${threadsChip}</div>
+        ${replyHtml}
+      </div>
+      <div class="pr-right">
+        ${stateHtml}
+        <div class="pr-updated">updated ${timeAgo(it.updatedAt)}</div>
+      </div>
+    </li>`;
+}
+
+function renderApprovedGrouped(items, isDismissedList) {
+  const grouped = new Map();
+  for (const it of items) {
+    if (!grouped.has(it.repo)) grouped.set(it.repo, []);
+    grouped.get(it.repo).push(it);
+  }
+  let html = '<ul class="pr-list">';
+  for (const [repo, list] of grouped) {
+    html += `<li class="repo-group-header" style="cursor:default;">
+      <a href="https://github.com/${escapeHtml(repo)}" target="_blank">${escapeHtml(repo)}</a>
+      <span class="repo-count">${list.length}</span>
+    </li>`;
+    html += list.map(it => renderApprovedCard(it, isDismissedList)).join('');
+  }
+  return html + '</ul>';
+}
+
+function renderApprovedList() {
+  if (!approvedLoaded) {
+    return approvedFetchFailed
+      ? `<div class="error-msg">${octicon('alert', 14)} Could not load your recent approvals. They will be retried on the next refresh.</div>`
+      : '<div class="loading"><div class="spinner"></div><br>Loading your recent approvals...</div>';
+  }
+  const view = computeApprovedView();
+  const days = getApprovedWindowDays();
+  let html = `<p class="ra-intro">PRs you approved in the last ${days} days. A PR leaves this list once it's merged or closed and all your comments are resolved.</p>`;
+  if (view.active.length === 0) {
+    const allDismissed = view.dismissed.length > 0;
+    html += `
+      <div class="blankslate">
+        <div class="blankslate-octicon">${octicon('smiley', 32)}</div>
+        <h3>${allDismissed ? 'All caught up' : 'Nothing to follow up on'}</h3>
+        <p>${allDismissed ? 'You dismissed every recent approval. A new reply to one of your comments brings it back.' : `No open PRs or unresolved comments from your approvals in the last ${days} days.`}</p>
+      </div>`;
+  } else {
+    html += renderApprovedGrouped(view.active, false);
+  }
+  if (view.dismissed.length > 0) {
+    const arrowClass = approvedDismissedExpanded ? 'arrow open' : 'arrow';
+    html += `<div class="dismissed-section">
+      <button class="dismissed-toggle" onclick="toggleApprovedDismissedSection()">
+        <span class="${arrowClass}">${octicon('chevron-right', 12)}</span>
+        ${view.dismissed.length} dismissed
+      </button>
+      ${approvedDismissedExpanded ? renderApprovedGrouped(view.dismissed, true) : ''}
+    </div>`;
+  }
+  return html;
 }
 
 /* ── Mentions ──────────────────────────────────────────────

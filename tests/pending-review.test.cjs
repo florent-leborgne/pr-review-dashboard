@@ -57,7 +57,7 @@ function searchPR(number, reviews) {
 
 async function loadReviewRequests(prs) {
   const app = dashboard();
-  for (const fn of ['loadUserStatus', 'setLoadingState', 'refreshMentions', 'renderPRs', 'renderMyPRs', 'renderMentions', 'updateCounts', 'updateHero']) {
+  for (const fn of ['loadUserStatus', 'setLoadingState', 'refreshMentions', 'refreshApproved', 'renderPRs', 'renderMyPRs', 'renderMentions', 'updateCounts', 'updateHero']) {
     app[fn] = () => {};
   }
   app.fetchMyPRs = async () => {};
