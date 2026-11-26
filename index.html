@@ -691,6 +691,7 @@
   }
 
   .pr-card.commented { border-left-color: var(--accent-deep); }
+  .pr-card.approved { border-left-color: var(--green); }
   .pr-card.changes {
     border-left-color: var(--red);
     border-left-width: 4px;
@@ -824,6 +825,7 @@
 
   .pr-review-status.pending { background: var(--badge-muted-bg); color: var(--text-muted); }
   .pr-review-status.commented { background: rgba(0, 119, 204, 0.10); color: var(--accent-deep); }
+  .pr-review-status.approved { background: var(--badge-green-bg); color: var(--green); }
   .pr-review-status.changes {
     background: var(--badge-red-strong-bg);
     color: var(--red);
@@ -1143,6 +1145,19 @@
     box-shadow: inset 0 0 0 1px var(--badge-red-ring);
   }
   .pr-queue-eta { font-size: 11px; color: var(--text-dim); white-space: nowrap; }
+  .pr-draft-review-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 2px 9px;
+    border-radius: 10px;
+    white-space: nowrap;
+    background: var(--badge-yellow-bg);
+    color: var(--yellow);
+  }
+  .pr-draft-review-badge .octicon { fill: currentColor; }
   .pr-queue-note { font-size: 12px; color: var(--text-muted); margin-top: 6px; }
   .pr-queue-note.alert { color: var(--red); font-weight: 600; display: flex; align-items: center; gap: 5px; }
 
@@ -2402,6 +2417,15 @@ async function searchMyPRs(searchQuery) {
   return prs;
 }
 
+// GitHub returns your unsubmitted review with state PENDING. Nobody else can see it until you submit it.
+function splitMyReviews(reviews, login) {
+  const mine = (reviews || []).filter(r => r.author?.login === login);
+  return {
+    submitted: mine.filter(r => r.state !== 'PENDING'),
+    draft: mine.find(r => r.state === 'PENDING') || null,
+  };
+}
+
 function getBotLogins() {
   try {
     const stored = localStorage.getItem(STORAGE_KEYS.botLogins);
@@ -2601,7 +2625,7 @@ async function fetchMyPRs() {
     // Consider only human-authored activity (exclude bots, GitHub Apps, etc.)
     // so that CI comments / automation noise never triggers "needs attention".
     const humanReviews = [...reviews]
-      .filter(r => isHumanActor(r.author))
+      .filter(r => isHumanActor(r.author) && r.state !== 'PENDING')
       .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
     // comments(last:10) arrives in ascending chronological order; take the last human one
     const humanComments = comments.filter(c => isHumanActor(c.author));
@@ -2653,7 +2677,7 @@ async function fetchMyPRs() {
     const reviewerApprovedWithComments = new Set(); // approved reviews that included inline comments
     for (const review of reviews) {
       const login = review.author?.login;
-      if (!login || login === pr.author?.login) continue;
+      if (!login || login === pr.author?.login || review.state === 'PENDING') continue;
       if (review.state === 'APPROVED' || review.state === 'CHANGES_REQUESTED') {
         reviewerLastDecisive.set(login, review.state);
         reviewerLastDecisiveAt.set(login, review.createdAt);
@@ -2844,7 +2868,7 @@ async function fetchPRs() {
     );
 
     allPRs = Array.from(seen.values()).map(pr => {
-      const myReviews = (pr.reviews?.nodes || []).filter(r => r.author?.login === username);
+      const { submitted: myReviews, draft: myDraftReview } = splitMyReviews(pr.reviews?.nodes, username);
       // Find the latest decisive review (APPROVED or CHANGES_REQUESTED).
       // COMMENTED reviews don't change your review stance — leaving a comment
       // after approving doesn't revoke the approval.
@@ -2899,7 +2923,7 @@ async function fetchPRs() {
       const reviewerApprovedWithComments = new Set(); // approved reviews that included inline comments
       for (const review of (pr.reviews?.nodes || [])) {
         const login = review.author?.login;
-        if (!login || login === pr.author?.login) continue;
+        if (!login || login === pr.author?.login || review.state === 'PENDING') continue;
         if (review.state === 'APPROVED' || review.state === 'CHANGES_REQUESTED') {
           reviewerLastDecisive.set(login, review.state);
           reviewerLastDecisiveAt.set(login, review.createdAt);
@@ -2965,6 +2989,9 @@ async function fetchPRs() {
         myState,
         latestReview: latestDecisive,
         myLastActivityAt,
+        myDraftReview: myDraftReview
+          ? { comments: myDraftReview.comments?.totalCount || 0, startedAt: myDraftReview.createdAt }
+          : null,
         isDirectRequest,
         isTeamRequest: matchedTeams.length > 0,
         matchedTeams,
@@ -2974,7 +3001,7 @@ async function fetchPRs() {
         queue: buildQueue(pr),
         repo: pr.repository?.nameWithOwner || 'unknown'
       };
-    }).filter(pr => pr.myState !== 'APPROVED' && pr.author?.login !== username && !pr.repository?.isArchived
+    }).filter(pr => (pr.myState !== 'APPROVED' || pr.myDraftReview) && pr.author?.login !== username && !pr.repository?.isArchived
       && !myPrKeys.has(`${pr.repository?.nameWithOwner}#${pr.number}`));
 
     allPRs.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
@@ -3109,12 +3136,13 @@ function renderPRCard(pr, isDismissedCard = false) {
     NONE: 'pending',
     COMMENTED: 'commented',
     CHANGES_REQUESTED: 'changes',
+    APPROVED: 'approved',
     DISMISSED: 'dismissed'
   }[pr.myState] || 'pending';
 
   const stateLabel = pr.myLastActivityAt && pr.myState !== 'NONE'
-    ? `${{ COMMENTED: 'Commented', CHANGES_REQUESTED: 'Changes requested', DISMISSED: 'Dismissed' }[pr.myState] || pr.myState} <span style="text-transform:none;font-weight:400;">(${timeAgo(pr.myLastActivityAt)})</span>`
-    : { NONE: 'Review required', COMMENTED: 'Commented', CHANGES_REQUESTED: 'Changes requested', DISMISSED: 'Dismissed' }[pr.myState] || pr.myState;
+    ? `${{ COMMENTED: 'Commented', CHANGES_REQUESTED: 'Changes requested', APPROVED: 'Approved', DISMISSED: 'Dismissed' }[pr.myState] || pr.myState} <span style="text-transform:none;font-weight:400;">(${timeAgo(pr.myLastActivityAt)})</span>`
+    : { NONE: 'Review required', COMMENTED: 'Commented', CHANGES_REQUESTED: 'Changes requested', APPROVED: 'Approved', DISMISSED: 'Dismissed' }[pr.myState] || pr.myState;
 
   const labels = (pr.labels?.nodes || []).map(l => {
     return `<span class="pr-label">${escapeHtml(l.name)}</span>`;
@@ -3155,6 +3183,7 @@ function renderPRCard(pr, isDismissedCard = false) {
       </div>
       <div class="pr-right">
         ${renderQueueBadge(pr.queue)}
+        ${renderDraftReviewBadge(pr.myDraftReview)}
         <span class="pr-review-status ${stateClass}">${stateLabel}</span>
         <div class="pr-updated">updated ${timeAgo(pr.updatedAt)}</div>
       </div>
@@ -3232,6 +3261,12 @@ function renderQueueBadge(queue) {
   const eta = queue.state !== 'UNMERGEABLE' ? formatEta(queue.etaSeconds) : '';
   return `<span class="pr-queue-badge ${cfg.cls}" title="In the merge queue">${octicon('merge-queue', 12)} ${cfg.label}</span>`
     + (eta ? `<span class="pr-queue-eta">est. ${eta}</span>` : '');
+}
+
+function renderDraftReviewBadge(draft) {
+  if (!draft) return '';
+  const count = draft.comments > 0 ? ` · ${draft.comments} comment${draft.comments === 1 ? '' : 's'}` : '';
+  return `<span class="pr-draft-review-badge" title="You started this review ${timeAgo(draft.startedAt)}. Only you can see it until you submit it.">${octicon('comment', 12)} Review not submitted${count}</span>`;
 }
 
 function renderRemovedFromQueueBadge(info) {
@@ -3597,14 +3632,17 @@ function deriveMentionItem(node, me, matchers) {
     else if (isOther(c.author)) addTag(c.body, c.createdAt, c.url, c.author, 'Comment');
   }
 
-  for (const r of node.reviews?.nodes || []) {
+  // Your unsubmitted review and its comments are PENDING. They don't answer anyone yet.
+  const isSent = c => c.state !== 'PENDING';
+
+  for (const r of (node.reviews?.nodes || []).filter(isSent)) {
     if (isMine(r.author)) myTimes.push(r.createdAt);
     else if (isOther(r.author)) addTag(r.body, r.createdAt, r.url, r.author, 'Review');
   }
 
   // Review threads are real threads, so a reply to your comment is exact.
   for (const thread of node.reviewThreads?.nodes || []) {
-    const cs = thread.comments?.nodes || [];
+    const cs = (thread.comments?.nodes || []).filter(isSent);
     const file = cs[0]?.path ? cs[0].path.split('/').pop() : null;
     let lastMine = -1;
     cs.forEach((c, i) => {
@@ -3682,11 +3720,11 @@ const MENTION_NODES_QUERY = `
         author { login __typename }
         repository { nameWithOwner isArchived }
         comments(last: 20) { nodes { ${MENTION_COMMENT_FIELDS} } }
-        reviews(last: 20) { nodes { ${MENTION_COMMENT_FIELDS} } }
+        reviews(last: 20) { nodes { ${MENTION_COMMENT_FIELDS} state } }
         reviewThreads(last: 30) {
           nodes {
             isResolved
-            comments(first: 10) { nodes { ${MENTION_COMMENT_FIELDS} path } }
+            comments(first: 10) { nodes { ${MENTION_COMMENT_FIELDS} path state } }
           }
         }
       }

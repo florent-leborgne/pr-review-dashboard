@@ -10,6 +10,7 @@ GitHub's built-in search can tell you which PRs you're "involved" in, but can't 
 - **Cross-repo**: Automatically finds PRs across all repositories where you or your teams are requested as reviewers
 - **Team-aware**: Auto-detects your GitHub team memberships and tracks team-based review requests
 - **Filters by review state**: Pending review, Commented, Changes requested
+- **Unsubmitted reviews**: If you started a review on GitHub but didn't submit it, the card shows a yellow **Review not submitted** chip with the number of draft comments. Your status still reflects only the reviews you submitted, so a PR with only a draft stays under **Pending review**. A PR you approved comes back with the chip while a new draft is open, so you don't forget to send it.
 - **Filters by reviewer**: Click any team/user badge in the header to filter PRs for that specific reviewer
 - **Team muting**: Double-click a team or user badge to mute it — those PRs are hidden until you unmute
 - **Collapsible teams bar**: Click the chevron next to the teams bar to collapse it to a compact summary line (state persisted)
@@ -93,9 +94,11 @@ Runs three types of searches in parallel:
 3. `team-review-requested:ORG/TEAM` — one query per team you belong to
 
 Results are merged, deduplicated, and filtered to exclude:
-- PRs you've already **approved** (comment-only reviews don't override a previous approval)
+- PRs you've already **approved** (comment-only reviews don't override a previous approval), unless you started a new review there and haven't submitted it
 - PRs from **archived repositories**
 - Your own PRs
+
+GitHub returns your unsubmitted review with the `PENDING` state, and only the token owner can see it. The dashboard ignores `PENDING` reviews when it computes your status, the reviewer chips, and **Needs attention** on **My PRs**. It uses them only for the **Review not submitted** chip. On the **Mentions** tab, your draft review comments don't count as an answer, so a mention stays until you submit.
 
 Each PR card shows:
 - Which team or direct request triggered it
