@@ -49,8 +49,9 @@ const review = (login, state, createdAt) => ({ author: user(login), state, creat
 const comment = (login, createdAt, body, extra = {}) => ({
   author: user(login), createdAt, body, state: 'SUBMITTED', url: `https://github.com/c/${createdAt}`, ...extra,
 });
-const thread = (isResolved, comments) => ({
+const thread = (isResolved, comments, isOutdated = false) => ({
   isResolved,
+  isOutdated,
   first: { nodes: [comments[0]] },
   latest: { nodes: comments.slice(-3) },
 });
@@ -87,6 +88,11 @@ test('acknowledgements are short replies made only of known words, links, and co
     'Good catch, updated.',
     'Applied the suggestion',
     'Done in `3f9c2e1`, thank you',
+    'Applied in 801246f36293, thanks.',
+    'Implemented all of your suggestions in https://github.com/elastic/kibana/pull/305633/commits/abc1234',
+    'Implemented all in https://github.com/elastic/kibana/pull/304435/commits/def5678',
+    'Addressed in [address feedback: update reason description](https://github.com/elastic/kibana/pull/306574/changes/fc297ab456be378116441fdadd0ea2baf7b0362b). Thanks"',
+    'Fixed in https://github.com/elastic/kibana/compare/main...branch?expand=1',
   ]) {
     assert.equal(app.isAckReply(body), true, body);
   }
@@ -144,7 +150,35 @@ test('threads you started are counted, including ones from before the approval',
     thread(false, [comment('akumar', '2026-11-24T08:00:00Z', 'Not my thread')]),
   ] } }), ME, NOW, 7);
 
-  assert.deepEqual({ ...item.threads }, { total: 3, resolved: 1 });
+  assert.deepEqual({ ...item.threads }, { total: 3, resolved: 1, outdated: 0 });
+});
+
+test('outdated threads count as addressed, unless a real reply waits in one', () => {
+  const app = dashboard();
+  const mine = comment(ME, '2026-11-24T10:00:00Z', 'Suggest "select".');
+  const merged = threads => approvedPR({ state: 'MERGED', mergedAt: '2026-11-25T10:00:00Z', reviewThreads: { nodes: threads } });
+
+  assert.equal(app.deriveApprovedItem(merged([
+    thread(true, [mine]),
+    thread(false, [mine], true),
+    thread(false, [mine, comment('mchen', '2026-11-25T08:00:00Z', 'Applied in 801246f36293, thanks.')], true),
+  ]), ME, NOW, 7), null, 'resolved or outdated, with only an acknowledgement');
+
+  const question = app.deriveApprovedItem(merged([
+    thread(false, [mine, comment('mchen', '2026-11-25T08:00:00Z', 'Which wording do you prefer?')], true),
+  ]), ME, NOW, 7);
+  assert.equal(question?.needsLook, true, 'a real reply keeps it');
+
+  const stillOpen = app.deriveApprovedItem(merged([thread(false, [mine], true), thread(false, [mine])]), ME, NOW, 7);
+  assert.deepEqual({ ...stillOpen.threads }, { total: 2, resolved: 0, outdated: 1 });
+
+  const handled = app.renderApprovedCard(app.deriveApprovedItem(approvedPR({ reviewThreads: { nodes: [
+    thread(true, [mine]), thread(false, [mine], true), thread(false, [mine], true),
+  ] } }), ME, NOW, 7));
+  assert.match(handled, /ra-chip ok/);
+  assert.match(handled, /1 of 3 comments resolved · 2 outdated/);
+
+  assert.match(app.renderApprovedCard(stillOpen), /ra-chip open[^>]*>.*0 of 2 comments resolved · 1 outdated/s);
 });
 
 test('merged or closed PRs stay only while one of your threads is unresolved', () => {

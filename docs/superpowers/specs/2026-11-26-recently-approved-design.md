@@ -6,16 +6,18 @@ Approved in chat after a browser mockup, then moved from its own tab to a filter
 
 A PR appears when your latest decisive review (approve or request changes) is an approval made inside the time window. It leaves the list when one of these happens:
 
-- It is merged or closed, and every review thread you started is resolved.
+- It is merged or closed, every review thread you started is resolved or outdated, and no real reply is waiting.
 - You dismiss it.
 - The approval is older than the time window.
+
+An outdated thread is on code that changed after your comment, usually because your suggestion was applied. Real data showed that authors rarely resolve those threads before merging, so they count as addressed. Added after the first implementation, at Florent's request.
 
 A dismissed approval brings the PR back to the other Review requests filters, as before. Your own PRs and archived repositories are skipped.
 
 ## Card content
 
 - Landed state: **Open** with CI, the merge queue chip when queued, **Merged** (purple edge), or **Closed** (red edge).
-- Your comments: "2 of 3 comments resolved", "All 3 comments resolved", or "No comments from you". The count covers every review thread you started on the PR, including threads from before the approval.
+- Your comments: "2 of 3 comments resolved", "1 of 3 comments resolved · 2 outdated", "All 3 comments resolved", or "No comments from you". The chip is green when every thread is resolved or outdated. The count covers every review thread you started on the PR, including threads from before the approval.
 - Reply waiting: when the last submitted comment in one of your unresolved threads is from another person, the card gets the gold attention style, a "@name replied" line, and a quote that links to the comment. Bots and configured service accounts don't count. Your own unsubmitted reply doesn't count as an answer.
 - Acknowledgements: a short reply such as "Done in 3f9c2e1", "Addressed, thanks", or a thumbs-up shows as a muted quote labeled **Looks addressed**. It doesn't trigger the attention style, doesn't turn the count gold, and doesn't bring back a dismissed card. A reply with a question mark, or with words outside the acknowledgement list, is a real reply.
 - Title, repo grouping, author, and "you approved 2d ago". No reviewer chips or labels.

@@ -24,7 +24,8 @@ GitHub's built-in search can tell you which PRs you're "involved" in, but can't 
 Select **Recently approved** in the **Review requests** filters to check on PRs you already approved: did they land, and did anyone answer your comments? This list isn't part of **All**, so your daily review list stays focused on PRs that still need you.
 
 - **Which PRs**: PRs where your latest decision is an approval made in the last 7 days. Change the window in Settings. A comment after your approval doesn't remove it. Request changes or a dismissed approval does.
-- **When a PR leaves**: An open PR stays for the whole window. A merged or closed PR leaves once every review thread you started is resolved. You can also dismiss a card.
+- **When a PR leaves**: An open PR stays for the whole window. A merged or closed PR leaves once every review thread you started is resolved or outdated, unless someone's reply is still waiting. You can also dismiss a card.
+- **Outdated comments count as addressed**: A thread is outdated when the code under your comment changed, usually because your suggestion was applied. Authors rarely press **Resolve** on those, so the chip shows them separately, for example **1 of 3 comments resolved · 2 outdated**, and turns green.
 - **Landed state**: Each card shows **Open** with CI, the merge queue chip, **Merged** with a purple edge, or **Closed** with a red edge.
 - **Your comments**: A chip shows how many of your review threads are resolved, for example **2 of 3 comments resolved**. It counts threads from before your approval too.
 - **Replies**: When someone other than you wrote last in one of your unresolved threads, the card is highlighted and quotes the reply, with a link to it. The filter count turns gold.
@@ -125,9 +126,9 @@ Each PR card shows:
 
 Runs one search per refresh: `is:pr reviewed-by:USERNAME -author:USERNAME updated:>=DATE`, without `is:open`, so merged and closed PRs come back too. A PR you approved inside the window was also updated inside it. The search reads up to 200 PRs.
 
-For each PR, the dashboard reads your reviews and the last 50 review threads. A thread is yours when you wrote its first comment. A reply is the last submitted comment in one of your unresolved threads, when someone else wrote it. Bots, configured service accounts, and your own unsubmitted replies are ignored.
+For each PR, the dashboard reads your reviews and the last 50 review threads. A thread is yours when you wrote its first comment. GitHub's `isOutdated` flag marks a thread as outdated. A reply is the last submitted comment in one of your unresolved threads, when someone else wrote it. Bots, configured service accounts, and your own unsubmitted replies are ignored.
 
-A reply counts as an acknowledgement when it's 160 characters or less, has no question mark, and contains only words like "done", "fixed", "addressed", "applied", or "thanks", plus links, commit hashes, and emoji. A dismissed card remembers the replies you saw, so only a new reply that isn't an acknowledgement brings it back.
+A reply counts as an acknowledgement when, without its links, it's 160 characters or less, has no question mark, and contains only words like "done", "fixed", "addressed", "applied", "implemented", or "thanks", plus commit hashes and emoji. The text of a Markdown link is ignored, because it's often a commit title. A dismissed card remembers the replies you saw, so only a new reply that isn't an acknowledgement brings it back.
 
 ### My PRs tab
 

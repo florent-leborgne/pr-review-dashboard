@@ -2564,7 +2564,7 @@ function renderSettingsBody() {
     <div class="settings-section">
       <div class="settings-section-title">Recently approved time window</div>
       <div class="settings-section-desc">
-        The Recently approved filter in Review requests shows PRs you approved within this window. A merged or closed PR leaves earlier, once all your comments on it are resolved.
+        The Recently approved filter in Review requests shows PRs you approved within this window. A merged or closed PR leaves earlier, once each of your comments on it is resolved or outdated.
       </div>
       <select id="approved-window-select" onchange="saveApprovedWindow(this.value)" style="font-size:12px; padding:3px 6px; border-radius:6px; border:1px solid var(--border-muted); background:var(--surface); color:var(--text);">
         ${APPROVED_WINDOW_OPTIONS.map(d => `<option value="${d}"${d === getApprovedWindowDays() ? ' selected' : ''}>Last ${d} days${d === 7 ? ' (default)' : ''}</option>`).join('')}
@@ -3471,8 +3471,8 @@ function renderMyPRs() {
 
 /* ── Recently approved ─────────────────────────────────────
    A filter under Review requests, outside All. One search lists PRs you reviewed
-   inside the window, open or not. A PR stays while it's open, or while one of the
-   review threads you started is unresolved. */
+   inside the window, open or not. A PR stays while it's open, while one of the
+   review threads you started is unresolved and current, or while a reply waits. */
 const APPROVED_WINDOW_OPTIONS = [7, 14, 30];
 let approvedItems = [];
 let approvedLoaded = false;
@@ -3497,7 +3497,8 @@ function saveApprovedWindow(value) {
 // is made of these words plus links, commit hashes, and emoji. A question never is.
 const ACK_WORDS = new Set(`
   done fixed fix addressed address updated update changed change applied apply accepted accept
-  resolved resolve committed pushed removed reworded rephrased adjusted tweaked
+  implemented implement incorporated resolved resolve committed pushed removed reworded rephrased
+  adjusted tweaked
   good great nice catch thanks thank thx ty you ok okay sure yes yep yup agreed agree makes sense
   will do in with via here now see commit suggestion suggestions comment comments feedback
   the this that it them these those both all everything one ones as suggested per your
@@ -3505,11 +3506,13 @@ const ACK_WORDS = new Set(`
 `.trim().split(/\s+/));
 
 function isAckReply(body) {
-  if (!(body || '').trim() || body.length > 160) return false;
-  const text = stripQuotedAndCode(body).replace(/[\u2018\u2019]/g, "'");
-  if (text.includes('?')) return false;
+  if (!(body || '').trim()) return false;
+  const text = stripQuotedAndCode(body)
+    .replace(/[\u2018\u2019]/g, "'")
+    .replace(/\[[^\]]*\]\([^)]*\)/g, ' ') // a link's text is often a commit title
+    .replace(/https?:\/\/\S+/g, ' ');
+  if (text.length > 160 || text.includes('?')) return false;
   const words = text
-    .replace(/https?:\/\/\S+/g, ' ')
     .replace(/:[a-z0-9_+-]+:/gi, ' ')
     .replace(/\b[0-9a-f]{7,40}\b/gi, ' ')
     .replace(/[@#][\w/-]+/g, ' ')
@@ -3553,6 +3556,7 @@ async function searchApprovedPRs(searchQuery, maxPages = 8) {
               reviewThreads(last: 50) {
                 nodes {
                   isResolved
+                  isOutdated
                   first: comments(first: 1) { nodes { author { login } } }
                   latest: comments(last: 3) {
                     nodes { author { login __typename } body createdAt url state }
@@ -3585,6 +3589,9 @@ function deriveApprovedItem(pr, me, now, windowDays) {
 
   const myThreads = (pr.reviewThreads?.nodes || []).filter(t => t.first?.nodes?.[0]?.author?.login === me);
   const resolved = myThreads.filter(t => t.isResolved).length;
+  // An outdated thread is on code that changed after your comment, usually an applied suggestion.
+  // Authors rarely resolve those, so they count as addressed.
+  const outdated = myThreads.filter(t => !t.isResolved && t.isOutdated).length;
   const replies = [];
   for (const t of myThreads) {
     if (t.isResolved) continue;
@@ -3596,7 +3603,8 @@ function deriveApprovedItem(pr, me, now, windowDays) {
   replies.sort((a, b) => b.at.localeCompare(a.at));
 
   const state = pr.state === 'MERGED' || pr.state === 'CLOSED' ? pr.state : 'OPEN';
-  if (state !== 'OPEN' && resolved === myThreads.length) return null;
+  const needsLook = replies.some(r => !r.ack);
+  if (state !== 'OPEN' && resolved + outdated === myThreads.length && !needsLook) return null;
 
   return {
     key: `${pr.repository.nameWithOwner}#${pr.number}`,
@@ -3613,9 +3621,9 @@ function deriveApprovedItem(pr, me, now, windowDays) {
     approvedAt: latestDecisive.createdAt,
     queue: state === 'OPEN' ? buildQueue(pr) : null,
     ciState: state === 'OPEN' ? ciStateOf(pr) : null,
-    threads: { total: myThreads.length, resolved },
+    threads: { total: myThreads.length, resolved, outdated },
     replies,
-    needsLook: replies.some(r => !r.ack),
+    needsLook,
   };
 }
 
@@ -3740,13 +3748,20 @@ function renderApprovedCard(it, isDismissedCard = false) {
     : `<span class="mention-type" title="${stateKey === 'merged' ? 'Merged' : 'Closed'} pull request">${octicon(stateKey === 'merged' ? 'git-merge' : 'git-pull-request-closed', 14)}</span>`;
   const draft = it.isDraft ? '<span style="color:var(--text-dim);">[Draft]</span> ' : '';
 
-  const { total, resolved } = it.threads;
+  const { total, resolved, outdated = 0 } = it.threads;
   const noun = total === 1 ? 'comment' : 'comments';
-  const threadsChip = total === 0
-    ? '<span class="ra-chip none">No comments from you</span>'
-    : resolved === total
-      ? `<span class="ra-chip ok">${octicon('check', 12)} ${total === 1 ? 'Your comment is resolved' : `All ${total} comments resolved`}</span>`
-      : `<span class="ra-chip open">${octicon('comment', 12)} ${resolved} of ${total} ${noun} resolved</span>`;
+  const outdatedPart = outdated > 0 ? ` · ${outdated} outdated` : '';
+  const outdatedTitle = outdated > 0 ? ' title="Outdated comments are on code that changed after you commented, usually because your suggestion was applied. They count as addressed."' : '';
+  let threadsChip;
+  if (total === 0) {
+    threadsChip = '<span class="ra-chip none">No comments from you</span>';
+  } else if (resolved === total) {
+    threadsChip = `<span class="ra-chip ok">${octicon('check', 12)} ${total === 1 ? 'Your comment is resolved' : `All ${total} comments resolved`}</span>`;
+  } else if (resolved + outdated === total) {
+    threadsChip = `<span class="ra-chip ok"${outdatedTitle}>${octicon('check', 12)} ${resolved} of ${total} ${noun} resolved${outdatedPart}</span>`;
+  } else {
+    threadsChip = `<span class="ra-chip open"${outdatedTitle}>${octicon('comment', 12)} ${resolved} of ${total} ${noun} resolved${outdatedPart}</span>`;
+  }
 
   const real = it.replies.filter(r => !r.ack);
   let replyHtml = '';
@@ -3817,7 +3832,7 @@ function renderApprovedList() {
   }
   const view = computeApprovedView();
   const days = getApprovedWindowDays();
-  let html = `<p class="ra-intro">PRs you approved in the last ${days} days. A PR leaves this list once it's merged or closed and all your comments are resolved.</p>`;
+  let html = `<p class="ra-intro">PRs you approved in the last ${days} days. A merged or closed PR leaves once each of your comments is resolved or outdated.</p>`;
   if (view.active.length === 0) {
     const allDismissed = view.dismissed.length > 0;
     html += `
